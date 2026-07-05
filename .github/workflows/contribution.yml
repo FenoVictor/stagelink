@@ -23,6 +23,6 @@ jobs:
       - name: Commit and push
         run: |
           git config user.name "FenoVictor"
-          git config user.email "feno.victor@example.com"
+          git config user.email "victortsimamandro@gmail.com"
           git diff --cached --quiet || git commit -m "chore: daily contribution $(date -u '+%Y-%m-%d')"
           git push
