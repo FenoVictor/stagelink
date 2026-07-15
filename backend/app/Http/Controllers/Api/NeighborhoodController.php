@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Api;
 use App\Http\Controllers\Controller;
 use App\Models\Neighborhood;
 use App\Models\Notification;
+use App\Models\StudentProfile;
 use App\Models\User;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
@@ -45,6 +46,11 @@ class NeighborhoodController extends Controller
             ]);
         }
 
+        // Auto-assign to proposer's student profile
+        StudentProfile::where('user_id', $request->user()->id)
+            ->whereNull('neighborhood_id')
+            ->update(['neighborhood_id' => $neighborhood->id]);
+
         return response()->json([
             'message' => 'Votre quartier a été proposé. En attente de validation par un administrateur.',
             'neighborhood' => $neighborhood,
@@ -72,6 +78,13 @@ class NeighborhoodController extends Controller
     public function approve(Neighborhood $neighborhood): JsonResponse
     {
         $neighborhood->update(['status' => 'approved', 'verified' => true]);
+
+        // Fallback: set proposer's neighborhood_id if not already set
+        if ($neighborhood->created_by) {
+            StudentProfile::where('user_id', $neighborhood->created_by)
+                ->whereNull('neighborhood_id')
+                ->update(['neighborhood_id' => $neighborhood->id]);
+        }
 
         return response()->json(['message' => 'Quartier approuvé.', 'neighborhood' => $neighborhood]);
     }

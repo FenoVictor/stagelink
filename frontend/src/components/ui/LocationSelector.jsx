@@ -70,7 +70,13 @@ export default function LocationSelector({ communeId, neighborhoodId, onChange }
     if (!newNeighborhood.trim()) return;
     setProposing(true);
     try {
-      await locationService.proposeNeighborhood(selectedCommune, newNeighborhood.trim());
+      const res = await locationService.proposeNeighborhood(selectedCommune, newNeighborhood.trim());
+      const nb = res.neighborhood || res.data?.neighborhood;
+      if (nb?.id) {
+        setNeighborhoods((prev) => [...prev, { id: nb.id, name: nb.name + " (en attente)" }]);
+        setSelectedNeighborhood(nb.id);
+        onChange({ commune_id: selectedCommune, neighborhood_id: nb.id });
+      }
       toast.success("Votre quartier a été proposé. En attente de validation.");
       setNewNeighborhood("");
     } catch (err) {
