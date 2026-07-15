@@ -62,6 +62,10 @@ class ProfileController extends Controller
             'school' => 'nullable|string|max:255',
             'major' => 'nullable|string|max:255',
             'graduation_year' => 'nullable|integer|min:1950|max:2100',
+            'diploma' => 'nullable|string|max:255',
+            'current_level' => 'nullable|in:L1,L2,L3,M1,M2',
+            'study_start' => 'nullable|integer|min:1950|max:2100',
+            'study_end' => 'nullable|integer|min:1950|max:2100',
             'languages' => 'nullable|json',
             'github' => 'nullable|string|url|max:255',
             'portfolio' => 'nullable|string|url|max:255',
@@ -86,11 +90,14 @@ class ProfileController extends Controller
         if ($request->hasFile('cv')) {
             $request->validate(['cv' => 'file|mimes:pdf,doc,docx|max:2048']);
             $validated['cv_path'] = $request->file('cv')->store('cvs', 'public');
+            $validated['cv_uploaded_at'] = now();
         }
 
         if ($request->hasFile('photo')) {
             $request->validate(['photo' => 'file|image|mimes:jpeg,png,jpg,webp|max:2048']);
             $validated['photo'] = $request->file('photo')->store('photos', 'public');
+        } elseif ($request->input('remove_photo') === '1') {
+            $validated['photo'] = null;
         }
 
         if (isset($validated['firstname']) || isset($validated['lastname'])) {

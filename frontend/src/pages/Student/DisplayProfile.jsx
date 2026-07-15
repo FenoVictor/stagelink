@@ -51,9 +51,11 @@ export default function DisplayProfile() {
 
           <hr className="border-border" />
 
-          {profile.school && <InfoRow label="École" value={profile.school} />}
-          {profile.major && <InfoRow label="Filière" value={profile.major} />}
-          {profile.graduation_year && <InfoRow label="Année d'obtention" value={profile.graduation_year} />}
+          {profile.school && <InfoRow label="Établissement" value={profile.school} />}
+          {profile.diploma && <InfoRow label="Diplôme" value={profile.diploma} />}
+          {profile.current_level && <InfoRow label="Niveau actuel" value={profile.current_level} />}
+          {profile.study_start && <InfoRow label="Début" value={profile.study_start} />}
+          {profile.study_end && <InfoRow label="Fin prévue" value={profile.study_end} />}
 
           {profile.skills && profile.skills.length > 0 && (
             <>
@@ -80,9 +82,16 @@ export default function DisplayProfile() {
           {profile.cv_path && (
             <>
               <hr className="border-border" />
-              <a href={profile.cv_path} target="_blank" rel="noopener noreferrer" className="text-primary hover:underline text-sm font-medium">
-                Télécharger le CV
-              </a>
+              <div>
+                <a href={profile.cv_path} target="_blank" rel="noopener noreferrer" className="text-primary hover:underline text-sm font-medium">
+                  Télécharger le CV
+                </a>
+                {profile.cv_uploaded_at && (
+                  <p className="text-xs text-text-muted mt-0.5">
+                    Ajouté le {new Date(profile.cv_uploaded_at).toLocaleDateString("fr-FR", { day: "2-digit", month: "2-digit", year: "numeric" })}
+                  </p>
+                )}
+              </div>
             </>
           )}
         </div>
