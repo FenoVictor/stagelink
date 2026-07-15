@@ -19,4 +19,19 @@ export const authService = {
     const { data } = await api.get("/user");
     return data;
   },
+
+  async changePassword(current_password, password, password_confirmation) {
+    const { data } = await api.post("/change-password", { current_password, password, password_confirmation });
+    return data;
+  },
+
+  async forgotPassword(email) {
+    const { data } = await api.post("/forgot-password", { email });
+    return data;
+  },
+
+  async resetPassword({ email, token, password, password_confirmation }) {
+    const { data } = await api.post("/reset-password", { email, token, password, password_confirmation });
+    return data;
+  },
 };

@@ -9,9 +9,30 @@ use Illuminate\Http\Request;
 
 class AdminInternshipController extends Controller
 {
-    public function index(): JsonResponse
+    public function index(Request $request): JsonResponse
     {
-        $internships = Internship::with('company')->latest()->get();
+        $query = Internship::with('company');
+
+        if ($search = $request->input('search')) {
+            $query->where(function ($q) use ($search) {
+                $q->where('title', 'like', "%{$search}%")
+                    ->orWhere('description', 'like', "%{$search}%")
+                    ->orWhereHas('company', function ($cq) use ($search) {
+                        $cq->where('name', 'like', "%{$search}%");
+                    });
+            });
+        }
+
+        if ($status = $request->input('status')) {
+            $query->where('status', $status);
+        }
+
+        $sortField = in_array($request->input('sort'), ['created_at', 'title', 'status']) ? $request->input('sort') : 'created_at';
+        $sortOrder = $request->input('order') === 'asc' ? 'asc' : 'desc';
+        $perPage = min((int) $request->input('per_page', 15), 50);
+
+        $internships = $query->orderBy($sortField, $sortOrder)
+            ->paginate($perPage);
 
         return response()->json($internships);
     }
@@ -19,7 +40,7 @@ class AdminInternshipController extends Controller
     public function update(Request $request, Internship $internship): JsonResponse
     {
         $validated = $request->validate([
-            'status' => 'sometimes|in:draft,open,closed,filled',
+            'status' => 'sometimes|in:draft,published,closed,expired',
             'title' => 'sometimes|string|max:255',
             'description' => 'sometimes|string',
         ]);

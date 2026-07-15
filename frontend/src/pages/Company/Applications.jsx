@@ -1,6 +1,8 @@
 import { useState, useEffect } from "react";
-import { FileText, Check, X, Eye } from "lucide-react";
+import { useNavigate } from "react-router-dom";
+import { FileText, Check, X, Eye, User } from "lucide-react";
 import { internshipService } from "../../services/internshipService";
+import { getErrorMessage } from "../../services/api";
 import Card from "../../components/ui/Card";
 import Badge from "../../components/ui/Badge";
 import Button from "../../components/ui/Button";
@@ -9,8 +11,10 @@ import EmptyState from "../../components/ui/EmptyState";
 import toast from "react-hot-toast";
 
 export default function CompanyApplications() {
+  const navigate = useNavigate();
   const [internships, setInternships] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
   const [selectedInternship, setSelectedInternship] = useState(null);
   const [applications, setApplications] = useState([]);
   const [showModal, setShowModal] = useState(false);
@@ -19,7 +23,7 @@ export default function CompanyApplications() {
   useEffect(() => {
     internshipService.getMyInternships()
       .then(setInternships)
-      .catch(() => {})
+      .catch((err) => setError(getErrorMessage(err)))
       .finally(() => setLoading(false));
   }, []);
 
@@ -39,12 +43,13 @@ export default function CompanyApplications() {
       await internshipService.updateApplicationStatus(id, status);
       toast.success(`Candidature ${status === "accepted" ? "acceptée" : "refusée"}`);
       setApplications((prev) => prev.map((a) => a.id === id ? { ...a, status } : a));
-    } catch {
-      toast.error("Erreur");
+    } catch (err) {
+      toast.error(getErrorMessage(err));
     }
   };
 
   if (loading) return <div className="flex justify-center py-12"><div className="animate-spin h-8 w-8 border-4 border-primary border-t-transparent rounded-full" /></div>;
+  if (error) return <div className="text-center py-12 text-danger"><p>{error}</p><button onClick={() => { setLoading(true); setError(null); internshipService.getMyInternships().then(setInternships).catch((err) => setError(getErrorMessage(err))).finally(() => setLoading(false)); }} className="mt-4 text-primary underline cursor-pointer">Réessayer</button></div>;
 
   return (
     <div>
@@ -54,7 +59,7 @@ export default function CompanyApplications() {
       </div>
 
       {internships.length === 0 ? (
-        <EmptyState icon={FileText} title="Aucune offre" description="Créez d'abord une offre de stage." action actionLabel="Créer une offre" onAction={() => window.location.href = "/company/internships"} />
+        <EmptyState icon={FileText} title="Aucune offre" description="Créez d'abord une offre de stage." action actionLabel="Créer une offre" onAction={() => navigate("/company/internships")} />
       ) : (
         <div className="space-y-3">
           {internships.map((internship) => (
@@ -87,6 +92,7 @@ export default function CompanyApplications() {
                     </Badge>
                   </div>
                   <div className="flex items-center gap-2">
+                    <button onClick={() => navigate(`/company/students/${app.student_id}`)} className="p-2 rounded-lg hover:bg-gray-100 transition-colors cursor-pointer" title="Voir le profil"><User size={16} className="text-text-muted" /></button>
                     <button onClick={() => setSelectedApp(app)} className="p-2 rounded-lg hover:bg-gray-100 transition-colors cursor-pointer"><Eye size={16} className="text-text-muted" /></button>
                     {app.status === "pending" && (
                       <>

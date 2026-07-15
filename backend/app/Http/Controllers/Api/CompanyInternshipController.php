@@ -18,9 +18,24 @@ class CompanyInternshipController extends Controller
         }
 
         $internships = Internship::with('categories')
+            ->withCount('applications')
             ->where('company_id', $company->id)
             ->latest()
             ->get();
+
+        $internships->loadCount(['applications as high_count' => fn($q) => $q->where('relevance', 'high')]);
+        $internships->loadCount(['applications as medium_count' => fn($q) => $q->where('relevance', 'medium')]);
+        $internships->loadCount(['applications as low_count' => fn($q) => $q->where('relevance', 'low')]);
+
+        $internships->each(function ($internship) {
+            $internship->application_stats = [
+                'total' => $internship->applications_count,
+                'high' => $internship->high_count,
+                'medium' => $internship->medium_count,
+                'low' => $internship->low_count,
+            ];
+            unset($internship->high_count, $internship->medium_count, $internship->low_count);
+        });
 
         return response()->json($internships);
     }
@@ -40,10 +55,11 @@ class CompanyInternshipController extends Controller
             'location' => 'nullable|string',
             'type' => 'nullable|in:remote,onsite,hybrid',
             'duration' => 'nullable|string',
+            'study_level' => 'nullable|string|max:100',
             'salary' => 'nullable|numeric|min:0',
             'slots' => 'nullable|integer|min:1',
             'deadline' => 'nullable|date',
-            'status' => 'nullable|in:draft,open,closed,filled',
+            'status' => 'nullable|in:draft,published,closed,expired',
             'categories' => 'nullable|array',
             'categories.*' => 'exists:categories,id',
         ]);
@@ -89,10 +105,11 @@ class CompanyInternshipController extends Controller
             'location' => 'nullable|string',
             'type' => 'nullable|in:remote,onsite,hybrid',
             'duration' => 'nullable|string',
+            'study_level' => 'nullable|string|max:100',
             'salary' => 'nullable|numeric|min:0',
             'slots' => 'nullable|integer|min:1',
             'deadline' => 'nullable|date',
-            'status' => 'nullable|in:draft,open,closed,filled',
+            'status' => 'nullable|in:draft,published,closed,expired',
             'categories' => 'nullable|array',
             'categories.*' => 'exists:categories,id',
         ]);

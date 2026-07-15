@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { useAuth } from "../../context/AuthContext";
+import { getErrorMessage } from "../../services/api";
 import AuthLayout from "../../layouts/AuthLayout";
 import Button from "../../components/ui/Button";
 import Input from "../../components/ui/Input";
@@ -26,8 +27,7 @@ export default function Login() {
       toast.success("Connecté avec succès !");
       navigate(`/${user.role}`);
     } catch (err) {
-      const msg = err.response?.data?.message || "Email ou mot de passe incorrect";
-      toast.error(msg);
+      toast.error(getErrorMessage(err));
     } finally {
       setLoading(false);
     }
@@ -54,6 +54,11 @@ export default function Login() {
           onChange={(e) => setForm({ ...form, password: e.target.value })}
           error={errors.password}
         />
+        <div className="text-right -mt-2">
+          <Link to="/forgot-password" className="text-sm text-primary hover:underline">
+            Mot de passe oublié ?
+          </Link>
+        </div>
         <Button type="submit" variant="primary" size="lg" className="w-full" loading={loading}>
           Se connecter
         </Button>

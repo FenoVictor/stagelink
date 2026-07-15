@@ -1,6 +1,7 @@
 import { useState, useEffect } from "react";
 import { Plus, Pencil, Trash2, Tag } from "lucide-react";
 import { adminService } from "../../services/adminService";
+import { getErrorMessage } from "../../services/api";
 import Card from "../../components/ui/Card";
 import Button from "../../components/ui/Button";
 import Input from "../../components/ui/Input";
@@ -11,6 +12,7 @@ import toast from "react-hot-toast";
 export default function AdminCategories() {
   const [categories, setCategories] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
   const [showModal, setShowModal] = useState(false);
   const [editing, setEditing] = useState(null);
   const [name, setName] = useState("");
@@ -18,7 +20,8 @@ export default function AdminCategories() {
 
   const load = () => {
     setLoading(true);
-    adminService.getCategories().then(setCategories).catch(() => {}).finally(() => setLoading(false));
+    setError(null);
+    adminService.getCategories().then(setCategories).catch((err) => setError(getErrorMessage(err))).finally(() => setLoading(false));
   };
 
   useEffect(() => { load(); }, []);
@@ -40,8 +43,8 @@ export default function AdminCategories() {
       }
       setShowModal(false);
       load();
-    } catch {
-      toast.error("Erreur");
+    } catch (err) {
+      toast.error(getErrorMessage(err));
     } finally {
       setSaving(false);
     }
@@ -53,12 +56,13 @@ export default function AdminCategories() {
       await adminService.deleteCategory(id);
       toast.success("Catégorie supprimée");
       load();
-    } catch {
-      toast.error("Erreur");
+    } catch (err) {
+      toast.error(getErrorMessage(err));
     }
   };
 
   if (loading) return <div className="flex justify-center py-12"><div className="animate-spin h-8 w-8 border-4 border-primary border-t-transparent rounded-full" /></div>;
+  if (error) return <div className="text-center py-12 text-danger"><p>{error}</p><button onClick={load} className="mt-4 text-primary underline cursor-pointer">Réessayer</button></div>;
 
   return (
     <div>

@@ -12,9 +12,9 @@ export const APPLICATION_STATUS = {
 
 export const INTERNSHIP_STATUS = {
   DRAFT: 'draft',
-  OPEN: 'open',
+  PUBLISHED: 'published',
   CLOSED: 'closed',
-  FILLED: 'filled',
+  EXPIRED: 'expired',
 };
 
 export const INTERNSHIP_TYPES = {

@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { useAuth } from "../../context/AuthContext";
+import { getErrorMessage } from "../../services/api";
 import AuthLayout from "../../layouts/AuthLayout";
 import Button from "../../components/ui/Button";
 import Input from "../../components/ui/Input";
@@ -12,7 +13,7 @@ export default function Register() {
   const { register } = useAuth();
   const navigate = useNavigate();
   const [form, setForm] = useState({
-    name: "", email: "", password: "", password_confirmation: "", role: ROLES.STUDENT,
+    firstname: "", lastname: "", email: "", password: "", password_confirmation: "", role: ROLES.STUDENT,
   });
   const [loading, setLoading] = useState(false);
   const [errors, setErrors] = useState({});
@@ -23,7 +24,8 @@ export default function Register() {
     e.preventDefault();
     setErrors({});
     const newErrors = {};
-    if (!form.name) newErrors.name = "Nom requis";
+    if (!form.firstname) newErrors.firstname = "Prénom requis";
+    if (!form.lastname) newErrors.lastname = "Nom requis";
     if (!form.email) newErrors.email = "Email requis";
     if (!form.password) newErrors.password = "Mot de passe requis";
     else if (form.password.length < 8) newErrors.password = "8 caractères minimum";
@@ -41,7 +43,7 @@ export default function Register() {
         Object.entries(data.errors).forEach(([key, msgs]) => { fieldErrors[key] = msgs[0]; });
         setErrors(fieldErrors);
       } else {
-        toast.error(data?.message || "Erreur lors de l'inscription");
+        toast.error(getErrorMessage(err));
       }
     } finally {
       setLoading(false);
@@ -51,7 +53,8 @@ export default function Register() {
   return (
     <AuthLayout title="Créer un compte" subtitle="Rejoignez StageLink pour trouver ou proposer des stages">
       <form onSubmit={handleSubmit} className="space-y-4">
-        <Input id="name" label="Nom complet" name="name" placeholder="Jean Dupont" value={form.name} onChange={handleChange} error={errors.name} />
+        <Input id="firstname" label="Prénom" name="firstname" placeholder="Jean" value={form.firstname} onChange={handleChange} error={errors.firstname} />
+        <Input id="lastname" label="Nom" name="lastname" placeholder="Dupont" value={form.lastname} onChange={handleChange} error={errors.lastname} />
         <Input id="reg-email" label="Email" name="email" type="email" placeholder="vous@exemple.fr" value={form.email} onChange={handleChange} error={errors.email} />
         <Select id="role" label="Je suis" name="role" value={form.role} onChange={handleChange} error={errors.role}>
           <option value={ROLES.STUDENT}>Étudiant</option>

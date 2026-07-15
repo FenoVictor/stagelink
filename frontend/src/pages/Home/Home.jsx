@@ -1,19 +1,23 @@
 import { Link } from "react-router-dom";
-import { Briefcase, GraduationCap, Building2, Search, FileText, Shield } from "lucide-react";
+import { Briefcase, GraduationCap, Building2, Search, FileText, Shield, Users, Upload, Bell, Server, BarChart3 } from "lucide-react";
 import Button from "../../components/ui/Button";
 
 const features = [
-  { icon: Search, title: "Trouvez le stage idéal", desc: "Parcourez des offres de stage dans toute la France, filtrées par domaine, durée et localisation." },
+  { icon: Search, title: "Trouvez le stage idéal", desc: "Parcourez des offres de stage à Toliara et dans toute Madagascar, filtrées par domaine, durée et localisation." },
+  { icon: Upload, title: "Dépôt de CV", desc: "Créez votre profil et déposez votre CV en ligne. Les entreprises vous trouveront plus facilement." },
   { icon: FileText, title: "Candidatures simplifiées", desc: "Postulez en un clic avec votre profil et suivez l'état de vos candidatures en temps réel." },
   { icon: Building2, title: "Pour les entreprises", desc: "Publiez vos offres et recevez des candidatures qualifiées de la part d'étudiants motivés." },
-  { icon: Shield, title: "Plateforme sécurisée", desc: "Profils vérifiés, échanges sécurisés et suivi transparent de chaque candidature." },
+  { icon: Users, title: "3 rôles intégrés", desc: "Étudiant, Entreprise, Administrateur — chaque acteur a son espace dédié avec des fonctionnalités adaptées." },
+  { icon: Bell, title: "Notifications par e-mail", desc: "Soyez alerté dès qu'une candidature est reçue ou qu'une offre correspond à votre profil." },
+  { icon: BarChart3, title: "Tableau de bord & statistiques", desc: "Suivez vos offres, candidatures et activités en temps réel depuis un tableau de bord clair." },
+  { icon: Shield, title: "API REST sécurisée", desc: "Plateforme moderne avec API sécurisée (Bearer token) pour une expérience fiable et rapide." },
 ];
 
 const stats = [
   { value: "500+", label: "Offres de stage" },
   { value: "2000+", label: "Étudiants actifs" },
   { value: "300+", label: "Entreprises partenaires" },
-  { value: "85%", label: "Taux de satisfaction" },
+  { value: "80%+", label: "Taux de placement" },
 ];
 
 export default function Home() {

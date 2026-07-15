@@ -30,6 +30,11 @@ class AdminCategoryController extends Controller
         return response()->json($category, 201);
     }
 
+    public function show(Category $category): JsonResponse
+    {
+        return response()->json($category);
+    }
+
     public function update(Request $request, Category $category): JsonResponse
     {
         $validated = $request->validate([

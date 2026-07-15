@@ -6,7 +6,7 @@ use Illuminate\Database\Eloquent\Model;
 
 class Application extends Model
 {
-    protected $fillable = ['internship_id', 'student_id', 'cv_path', 'cover_letter', 'status'];
+    protected $fillable = ['internship_id', 'student_id', 'cv_path', 'cover_letter', 'status', 'relevance'];
 
     public function internship()
     {

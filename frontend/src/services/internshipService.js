@@ -6,6 +6,11 @@ export const internshipService = {
     return data;
   },
 
+  async getFilters() {
+    const { data } = await api.get("/internships/filters");
+    return data;
+  },
+
   async getOne(id) {
     const { data } = await api.get(`/internships/${id}`);
     return data;
@@ -19,6 +24,7 @@ export const internshipService = {
   },
 
   async update(id, formData) {
+    formData.append("_method", "PUT");
     const { data } = await api.post(`/company/internships/${id}`, formData, {
       headers: { "Content-Type": "multipart/form-data" },
     });
