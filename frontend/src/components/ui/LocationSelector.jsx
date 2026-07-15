@@ -26,6 +26,23 @@ export default function LocationSelector({ communeId, neighborhoodId, onChange }
     locationService.getCountries().then(setCountries).catch(() => {});
   }, []);
 
+  // Sync props → state (profile loaded asynchronously)
+  useEffect(() => {
+    setSelectedCommune(communeId || "");
+  }, [communeId]);
+
+  useEffect(() => {
+    setSelectedNeighborhood(neighborhoodId || "");
+  }, [neighborhoodId]);
+
+  // Fetch neighborhoods for the saved commune on mount/prop change
+  useEffect(() => {
+    if (!communeId) return;
+    locationService.getNeighborhoods(communeId)
+      .then(setNeighborhoods)
+      .catch(() => {});
+  }, [communeId]);
+
   const fetchProvinces = useCallback((countryId) => {
     setSelectedProvince(""); setSelectedRegion(""); setSelectedDistrict(""); setSelectedCommune(""); setSelectedNeighborhood("");
     setProvinces([]); setRegions([]); setDistricts([]); setCommunes([]); setNeighborhoods([]);
