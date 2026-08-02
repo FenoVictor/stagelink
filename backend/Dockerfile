@@ -33,6 +33,13 @@ WORKDIR /app
 
 COPY . /app
 
+RUN mkdir -p \
+        bootstrap/cache \
+        storage/framework/cache/data \
+        storage/framework/sessions \
+        storage/framework/views \
+        storage/logs
+
 RUN composer install --no-dev --optimize-autoloader \
     && php artisan storage:link \
     && chmod -R 775 storage bootstrap/cache
