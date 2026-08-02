@@ -5,7 +5,6 @@ services:
     dockerfilePath: ./backend/Dockerfile
     dockerContext: ./backend
     plan: free
-    preDeployCommand: php artisan migrate --force --seed --force
     healthCheckPath: /api/health
     envVars:
       - key: APP_ENV
