@@ -11,6 +11,7 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
         libxml2-dev \
         zlib1g-dev \
         git \
+        ca-certificates \
         unzip \
     && docker-php-ext-configure gd --with-freetype --with-jpeg \
     && docker-php-ext-install -j"$(nproc)" \

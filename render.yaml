@@ -43,6 +43,12 @@ services:
         sync: false
       - key: APP_KEY
         sync: false
+      - key: DB_CONNECTION
+        value: mysql
+      - key: MYSQL_ATTR_SSL_CA
+        value: /etc/ssl/certs/ca-certificates.crt
+      - key: DB_SSL_VERIFY_SERVER_CERT
+        value: "false"
       - key: DB_HOST
         sync: false
       - key: DB_PORT
