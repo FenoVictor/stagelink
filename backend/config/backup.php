@@ -236,7 +236,7 @@ return [
         'notifiable' => Notifiable::class,
 
         'mail' => [
-            'to' => env('BACKUP_NOTIFY_EMAIL'),
+            'to' => env('BACKUP_NOTIFY_EMAIL', config('mail.from.address', 'noreply@stagelink.fr')),
 
             'from' => [
                 'address' => env('MAIL_FROM_ADDRESS', 'noreply@stagelink.fr'),

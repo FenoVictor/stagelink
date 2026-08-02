@@ -1,5 +1,5 @@
-import { useState, useEffect } from "react";
-import { Link } from "react-router-dom";
+﻿import { useState, useEffect } from "react";
+import { Link } from "react-router";
 import { adminService } from "../../services/adminService";
 import { getErrorMessage } from "../../services/api";
 import { Building2, Search, CheckCircle, XCircle, AlertTriangle, Trash2, Eye, Briefcase, Mail, MapPin, Globe, Clock } from "lucide-react";

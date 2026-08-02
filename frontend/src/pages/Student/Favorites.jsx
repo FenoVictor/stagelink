@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+﻿import { useState, useEffect } from "react";
 import { Heart, MapPin, Clock, Euro, Building2, Trash2 } from "lucide-react";
 import { favoriteService } from "../../services/favoriteService";
 import { getErrorMessage } from "../../services/api";
@@ -7,7 +7,7 @@ import Badge from "../../components/ui/Badge";
 import Button from "../../components/ui/Button";
 import EmptyState from "../../components/ui/EmptyState";
 import toast from "react-hot-toast";
-import { Link, useNavigate } from "react-router-dom";
+import { Link, useNavigate } from "react-router";
 
 export default function Favorites() {
   const navigate = useNavigate();

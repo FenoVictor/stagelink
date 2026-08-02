@@ -1,5 +1,5 @@
-import { useState, useEffect } from "react";
-import { useNavigate } from "react-router-dom";
+﻿import { useState, useEffect } from "react";
+import { useNavigate } from "react-router";
 import { FileText, Building2, Calendar, Download } from "lucide-react";
 import { internshipService } from "../../services/internshipService";
 import { getErrorMessage } from "../../services/api";

@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef, useCallback } from "react";
+﻿import { useState, useEffect, useRef, useCallback } from "react";
 import { Search, MapPin, Clock, GraduationCap, Euro, Building2, Upload, FileText, X, XCircle, SlidersHorizontal, Heart, Briefcase, Filter, Users } from "lucide-react";
 import { internshipService } from "../../services/internshipService";
 import { favoriteService } from "../../services/favoriteService";
@@ -15,7 +15,7 @@ import Modal from "../../components/ui/Modal";
 import Pagination from "../../components/ui/Pagination";
 import ChatModal from "../../components/chat/ChatModal";
 import toast from "react-hot-toast";
-import { Link, useNavigate } from "react-router-dom";
+import { Link, useNavigate } from "react-router";
 
 const typeOptions = [
   { value: "", label: "Tous les types" },

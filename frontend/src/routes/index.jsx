@@ -1,5 +1,5 @@
-import { lazy } from "react";
-import { createBrowserRouter } from "react-router-dom";
+﻿import { lazy } from "react";
+import { createBrowserRouter } from "react-router";
 import ProtectedRoute from "../components/common/ProtectedRoute";
 import DashboardLayout from "../layouts/DashboardLayout";
 

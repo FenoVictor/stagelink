@@ -47,4 +47,10 @@ class InternshipPolicy
         return $user->role === 'company'
             && $internship->company->user_id === $user->id;
     }
+
+    public function export(User $user, Internship $internship): bool
+    {
+        return $user->role === 'company'
+            && $internship->company->user_id === $user->id;
+    }
 }

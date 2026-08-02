@@ -69,12 +69,19 @@ class AuthController extends Controller
 
             DB::commit();
 
-            $user->notify(new VerifyEmailNotification());
-
             try {
                 Mail::to($user->email)->queue(new Welcome($user));
             } catch (\Throwable $e) {
                 Log::error('Welcome email failed', [
+                    'user_id' => $user->id,
+                    'error' => $e->getMessage(),
+                ]);
+            }
+
+            try {
+                $user->notify(new VerifyEmailNotification());
+            } catch (\Throwable $e) {
+                Log::error('Verification email failed', [
                     'user_id' => $user->id,
                     'error' => $e->getMessage(),
                 ]);

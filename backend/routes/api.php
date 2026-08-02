@@ -37,10 +37,10 @@ use App\Http\Controllers\Api\TwoFactorController;
 use App\Http\Controllers\Api\UserSearchController;
 
 // Public routes
-Route::post('/register', [AuthController::class, 'register'])->middleware('throttle:3,60');
-Route::post('/login', [AuthController::class, 'login'])->middleware('throttle:5,60');
+Route::post('/register', [AuthController::class, 'register'])->middleware('throttle:register');
+Route::post('/login', [AuthController::class, 'login'])->middleware('throttle:login');
 Route::post('/2fa/verify', [AuthController::class, 'verifyTwoFactor'])->middleware('auth:sanctum');
-Route::post('/forgot-password', [AuthController::class, 'forgotPassword'])->middleware('throttle:3,60');
+Route::post('/forgot-password', [AuthController::class, 'forgotPassword'])->middleware('throttle:forgot-password');
 Route::post('/reset-password', [AuthController::class, 'resetPassword']);
 Route::get('/email/verify/{id}/{hash}', [EmailVerificationController::class, 'verify'])->name('verification.verify');
 Route::get('/internships', [InternshipController::class, 'index']);
@@ -51,7 +51,7 @@ Route::get('/skills', SkillController::class);
 Route::get('/categories', [\App\Http\Controllers\Api\CategoryController::class, 'index']);
 Route::get('/companies/{company}', [\App\Http\Controllers\Api\PublicCompanyController::class, 'show']);
 Route::get('/stats', \App\Http\Controllers\Api\PublicStatsController::class);
-Route::post('/feedback', [FeedbackController::class, 'store'])->middleware('throttle:5,60');
+Route::post('/feedback', [FeedbackController::class, 'store'])->middleware('throttle:feedback');
 
 // Location hierarchy
 Route::get('/locations/countries', [LocationController::class, 'countries']);

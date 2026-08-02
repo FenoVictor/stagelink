@@ -2,9 +2,12 @@
 
 namespace App\Http\Controllers\Api;
 
+use App\Events\NewMessage;
+use App\Events\NewNotification;
 use App\Http\Controllers\Controller;
 use App\Models\Conversation;
 use App\Models\ConversationParticipant;
+use App\Models\Notification;
 use App\Models\User;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
@@ -99,6 +102,24 @@ class ConversationController extends Controller
         ]);
 
         $conversation->touch();
+
+        broadcast(new NewMessage($message));
+
+        $otherParticipantId = $studentId === $authUser->id ? $companyId : $studentId;
+
+        try {
+            $notification = Notification::create([
+                'user_id' => $otherParticipantId,
+                'type' => 'message:' . $conversation->id,
+                'title' => 'Nouveau message',
+                'message' => $authUser->name . ' vous a envoyé un message.',
+            ]);
+            broadcast(new NewNotification($notification));
+        } catch (\Throwable $e) {
+            Log::error('Message notification creation failed', [
+                'error' => $e->getMessage(),
+            ]);
+        }
 
         Log::info('Message envoyé', [
             'conversation_id' => $conversation->id,

@@ -1,5 +1,5 @@
-import { useState, useEffect } from "react";
-import { useParams, useNavigate } from "react-router-dom";
+﻿import { useState, useEffect } from "react";
+import { useParams, useNavigate } from "react-router";
 import { studentService } from "../../services/studentService";
 import { getErrorMessage } from "../../services/api";
 import { ArrowLeft, Mail, Phone, MapPin, Calendar, GraduationCap, Globe, BookOpen, ExternalLink, Download, MessageSquare } from "lucide-react";

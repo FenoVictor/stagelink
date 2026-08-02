@@ -21,6 +21,25 @@ class DatabaseSeeder extends Seeder
     {
         $this->call(LocationSeeder::class);
         $this->call(SkillSeeder::class);
+
+        // Categories (référence — requises dans tous les environnements)
+        $categories = [
+            ['name' => 'Développement', 'slug' => 'developpement'],
+            ['name' => 'Marketing', 'slug' => 'marketing'],
+            ['name' => 'Design', 'slug' => 'design'],
+            ['name' => 'Finance', 'slug' => 'finance'],
+            ['name' => 'Ressources Humaines', 'slug' => 'ressources-humaines'],
+        ];
+
+        foreach ($categories as $cat) {
+            Category::create($cat);
+        }
+
+        // Données de démonstration — jamais créées en production
+        if (app()->isProduction()) {
+            return;
+        }
+
         // Admin user
         $admin = User::create([
             'name' => 'Admin',
@@ -66,19 +85,6 @@ class DatabaseSeeder extends Seeder
             'graduation_year' => 2025,
             'commune_id' => $toliara?->id,
         ]);
-
-        // Categories
-        $categories = [
-            ['name' => 'Développement', 'slug' => 'developpement'],
-            ['name' => 'Marketing', 'slug' => 'marketing'],
-            ['name' => 'Design', 'slug' => 'design'],
-            ['name' => 'Finance', 'slug' => 'finance'],
-            ['name' => 'Ressources Humaines', 'slug' => 'ressources-humaines'],
-        ];
-
-        foreach ($categories as $cat) {
-            Category::create($cat);
-        }
 
         // Internships
         $devCategory = Category::where('slug', 'developpement')->first();

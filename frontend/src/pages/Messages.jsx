@@ -1,5 +1,5 @@
-import { useState, useEffect, useRef, useCallback } from "react";
-import { useParams, useNavigate } from "react-router-dom";
+﻿import { useState, useEffect, useRef, useCallback } from "react";
+import { useParams, useNavigate } from "react-router";
 import { MessageSquare, Send, ArrowLeft, User, Building2, Loader2, Plus, X, Search as SearchIcon, Phone, Mail, Paperclip, FileText } from "lucide-react";
 import { conversationService } from "../services/conversationService";
 import { notificationService } from "../services/notificationService";

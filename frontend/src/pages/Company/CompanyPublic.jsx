@@ -1,5 +1,5 @@
-import { useState, useEffect } from "react";
-import { useParams, Link } from "react-router-dom";
+﻿import { useState, useEffect } from "react";
+import { useParams, Link } from "react-router";
 import { Helmet } from "react-helmet-async";
 import { MapPin, Globe, Phone, Building2, Calendar, Users, Briefcase, ArrowLeft, Clock, Euro, GraduationCap } from "lucide-react";
 import api, { getErrorMessage } from "../../services/api";

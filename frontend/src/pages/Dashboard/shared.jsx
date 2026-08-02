@@ -1,4 +1,4 @@
-import { Link } from "react-router-dom";
+﻿import { Link } from "react-router";
 import { AlertCircle, ArrowRight, Activity, FileText, Calendar, MessageSquare, Heart } from "lucide-react";
 import Card from "../../components/ui/Card";
 import Button from "../../components/ui/Button";

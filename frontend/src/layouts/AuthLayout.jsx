@@ -1,4 +1,4 @@
-import { Link } from "react-router-dom";
+﻿import { Link } from "react-router";
 import ThemeToggle from "../components/common/ThemeToggle";
 import LanguageSwitcher from "../components/common/LanguageSwitcher";
 

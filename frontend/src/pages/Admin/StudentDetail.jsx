@@ -1,5 +1,5 @@
-import { useState, useEffect } from "react";
-import { useParams, Link, useNavigate } from "react-router-dom";
+﻿import { useState, useEffect } from "react";
+import { useParams, Link, useNavigate } from "react-router";
 import { adminService } from "../../services/adminService";
 import { getErrorMessage } from "../../services/api";
 import { GraduationCap, Mail, Phone, Calendar, FileText, Briefcase, Heart, ArrowLeft, Download, ExternalLink, MapPin, Globe } from "lucide-react";
