@@ -1,14 +1,12 @@
 services:
   - type: web
     name: stagelink-api
-    runtime: php
-    rootDir: backend
+    runtime: docker
+    dockerfilePath: ./backend/Dockerfile
+    dockerContext: ./backend
     plan: free
-    buildCommand: |
-      composer install --no-dev --optimize-autoloader
-      php artisan storage:link
-      php artisan migrate --force --seed --force
-    startCommand: php artisan serve --host=0.0.0.0 --port=${PORT:-8000}
+    preDeployCommand: php artisan migrate --force --seed --force
+    healthCheckPath: /api/health
     envVars:
       - key: APP_ENV
         value: production

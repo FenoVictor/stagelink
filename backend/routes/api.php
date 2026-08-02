@@ -37,6 +37,9 @@ use App\Http\Controllers\Api\TwoFactorController;
 use App\Http\Controllers\Api\UserSearchController;
 
 // Public routes
+Route::get('/health', function () {
+    return response()->json(['status' => 'ok', 'time' => now()->toIso8601String()]);
+})->name('health');
 Route::post('/register', [AuthController::class, 'register'])->middleware('throttle:register');
 Route::post('/login', [AuthController::class, 'login'])->middleware('throttle:login');
 Route::post('/2fa/verify', [AuthController::class, 'verifyTwoFactor'])->middleware('auth:sanctum');
