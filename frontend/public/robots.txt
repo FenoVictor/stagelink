@@ -5,4 +5,4 @@ Disallow: /api/
 Disallow: /student/
 Disallow: /company/
 
-Sitemap: https://stagelink-ten.vercel.app/sitemap.xml
+Sitemap: https://stagelink.mg/sitemap.xml
