@@ -13,7 +13,7 @@ class LocationSeeder extends Seeder
 {
     public function run(): void
     {
-        $country = Country::create(['name' => 'Madagascar', 'iso_code' => 'MG']);
+        $country = Country::firstOrCreate(['iso_code' => 'MG'], ['name' => 'Madagascar', 'iso_code' => 'MG']);
 
         $provinces = [
             'Toliara' => [
@@ -115,16 +115,28 @@ class LocationSeeder extends Seeder
         ];
 
         foreach ($provinces as $provinceName => $provinceData) {
-            $province = Province::create(['country_id' => $country->id, 'name' => $provinceName]);
+            $province = Province::firstOrCreate(
+                ['country_id' => $country->id, 'name' => $provinceName],
+                ['country_id' => $country->id, 'name' => $provinceName]
+            );
 
             foreach ($provinceData['regions'] as $regionName => $regionData) {
-                $region = Region::create(['province_id' => $province->id, 'name' => $regionName]);
+                $region = Region::firstOrCreate(
+                    ['province_id' => $province->id, 'name' => $regionName],
+                    ['province_id' => $province->id, 'name' => $regionName]
+                );
 
                 foreach ($regionData['districts'] as $districtName => $districtData) {
-                    $district = District::create(['region_id' => $region->id, 'name' => $districtName]);
+                    $district = District::firstOrCreate(
+                        ['region_id' => $region->id, 'name' => $districtName],
+                        ['region_id' => $region->id, 'name' => $districtName]
+                    );
 
                     foreach ($districtData['communes'] as $communeName) {
-                        Commune::create(['district_id' => $district->id, 'name' => $communeName]);
+                        Commune::firstOrCreate(
+                            ['district_id' => $district->id, 'name' => $communeName],
+                            ['district_id' => $district->id, 'name' => $communeName]
+                        );
                     }
                 }
             }
