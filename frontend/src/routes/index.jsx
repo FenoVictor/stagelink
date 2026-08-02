@@ -24,17 +24,29 @@ const AdminInternships = lazy(() => import("../pages/Admin/Internships"));
 const AdminCategories = lazy(() => import("../pages/Admin/Categories"));
 const AdminPasswordResets = lazy(() => import("../pages/Admin/PasswordResets"));
 const AdminNeighborhoods = lazy(() => import("../pages/Admin/Neighborhoods"));
+const AdminAuditLog = lazy(() => import("../pages/Admin/AuditLog"));
 const StudentMyInternships = lazy(() => import("../pages/Student/MyInternships"));
 const Favorites = lazy(() => import("../pages/Student/Favorites"));
 const Messages = lazy(() => import("../pages/Messages"));
 const Interviews = lazy(() => import("../pages/Interviews"));
+const CompanyPublic = lazy(() => import("../pages/Company/CompanyPublic"));
+const VerifyEmail = lazy(() => import("../pages/Auth/VerifyEmail"));
+const DataProtection = lazy(() => import("../pages/Settings/DataProtection"));
+const AdminSecuritySettings = lazy(() => import("../pages/Admin/SecuritySettings"));
+const AdminMetrics = lazy(() => import("../pages/Admin/Metrics"));
+const TwoFactorSettings = lazy(() => import("../pages/Settings/TwoFactorSettings"));
+const TokenManagement = lazy(() => import("../pages/Settings/TokenManagement"));
+const LoginLogs = lazy(() => import("../pages/Admin/LoginLogs"));
+const AdminFeedback = lazy(() => import("../pages/Admin/Feedback"));
 
 export const router = createBrowserRouter([
   { path: "/", element: <Home /> },
+  { path: "/entreprise/:id", element: <CompanyPublic /> },
   { path: "/login", element: <Login /> },
   { path: "/register", element: <Register /> },
   { path: "/forgot-password", element: <ForgotPassword /> },
   { path: "/reset-password", element: <ResetPassword /> },
+  { path: "/verify-email", element: <VerifyEmail /> },
   {
     path: "/student",
     element: <ProtectedRoute roles={["student"]}><DashboardLayout /></ProtectedRoute>,
@@ -48,6 +60,9 @@ export const router = createBrowserRouter([
       { path: "messages", element: <Messages /> },
       { path: "messages/:id", element: <Messages /> },
       { path: "interviews", element: <Interviews /> },
+      { path: "data-protection", element: <DataProtection /> },
+      { path: "2fa", element: <TwoFactorSettings /> },
+      { path: "tokens", element: <TokenManagement /> },
     ],
   },
   {
@@ -62,6 +77,9 @@ export const router = createBrowserRouter([
       { path: "messages/:id", element: <Messages /> },
       { path: "interviews", element: <Interviews /> },
       { path: "students/:id", element: <CompanyStudentView /> },
+      { path: "data-protection", element: <DataProtection /> },
+      { path: "2fa", element: <TwoFactorSettings /> },
+      { path: "tokens", element: <TokenManagement /> },
     ],
   },
   {
@@ -77,6 +95,14 @@ export const router = createBrowserRouter([
       { path: "categories", element: <AdminCategories /> },
       { path: "password-resets", element: <AdminPasswordResets /> },
       { path: "neighborhoods", element: <AdminNeighborhoods /> },
+      { path: "audit-log", element: <AdminAuditLog /> },
+      { path: "feedback", element: <AdminFeedback /> },
+      { path: "data-protection", element: <DataProtection /> },
+      { path: "security", element: <AdminSecuritySettings /> },
+      { path: "metrics", element: <AdminMetrics /> },
+      { path: "login-logs", element: <LoginLogs /> },
+      { path: "2fa", element: <TwoFactorSettings /> },
+      { path: "tokens", element: <TokenManagement /> },
     ],
   },
 ]);

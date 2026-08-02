@@ -1,125 +1,181 @@
+import { useState, useEffect } from "react";
 import { Link } from "react-router-dom";
-import { Briefcase, GraduationCap, Building2, Search, FileText, Shield, Users, Upload, Bell, Server, BarChart3 } from "lucide-react";
-import Button from "../../components/ui/Button";
+import { useTranslation } from "react-i18next";
+import { Helmet } from "react-helmet-async";
+import { internshipService } from "../../services/internshipService";
+import api from "../../services/api";
+import { Search, Briefcase, MapPin, Euro, Clock } from "lucide-react";
+import ThemeToggle from "../../components/common/ThemeToggle";
+import LanguageSwitcher from "../../components/common/LanguageSwitcher";
 
 const features = [
-  { icon: Search, title: "Trouvez le stage idéal", desc: "Parcourez des offres de stage à Toliara et dans toute Madagascar, filtrées par domaine, durée et localisation." },
-  { icon: Upload, title: "Dépôt de CV", desc: "Créez votre profil et déposez votre CV en ligne. Les entreprises vous trouveront plus facilement." },
-  { icon: FileText, title: "Candidatures simplifiées", desc: "Postulez en un clic avec votre profil et suivez l'état de vos candidatures en temps réel." },
-  { icon: Building2, title: "Pour les entreprises", desc: "Publiez vos offres et recevez des candidatures qualifiées de la part d'étudiants motivés." },
-  { icon: Users, title: "3 rôles intégrés", desc: "Étudiant, Entreprise, Administrateur — chaque acteur a son espace dédié avec des fonctionnalités adaptées." },
-  { icon: Bell, title: "Notifications par e-mail", desc: "Soyez alerté dès qu'une candidature est reçue ou qu'une offre correspond à votre profil." },
-  { icon: BarChart3, title: "Tableau de bord & statistiques", desc: "Suivez vos offres, candidatures et activités en temps réel depuis un tableau de bord clair." },
-  { icon: Shield, title: "API REST sécurisée", desc: "Plateforme moderne avec API sécurisée (Bearer token) pour une expérience fiable et rapide." },
+  { titleKey: "home.statsTitle", descKey: "home.statsTitle" },
 ];
 
-const stats = [
-  { value: "500+", label: "Offres de stage" },
-  { value: "2000+", label: "Étudiants actifs" },
-  { value: "300+", label: "Entreprises partenaires" },
-  { value: "80%+", label: "Taux de placement" },
+const featureData = [
+  { title: "Recherche intelligente", desc: "Trouvez le stage idéal parmi des centaines d'offres." },
+  { title: "CV en ligne", desc: "Créez et partagez votre profil directement depuis la plateforme." },
+  { title: "Candidatures simplifiées", desc: "Postulez en un clic et suivez vos candidatures." },
+  { title: "Entreprises vérifiées", desc: "Toutes les offres proviennent d'entreprises certifiées." },
+  { title: "3 profils", desc: "Étudiant, Entreprise, Administrateur — une plateforme pour tous." },
+  { title: "Notifications", desc: "Restez informé de vos candidatures et messages en temps réel." },
+  { title: "Dashboard", desc: "Un tableau de bord complet pour suivre votre activité." },
+  { title: "API REST", desc: "Architecture moderne et évolutive." },
 ];
 
 export default function Home() {
+  const { t } = useTranslation();
+  const [internships, setInternships] = useState([]);
+  const [stats, setStats] = useState({ internships: 0, students: 0, companies: 0, placement: 80 });
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    Promise.all([
+      internshipService.getAll({ per_page: 6, sort: "created_at", order: "desc" }),
+      api.get("/stats").then(({ data }) => data).catch(() => ({})),
+    ])
+      .then(([res, statsData]) => {
+        const data = res.data?.data || res.data || [];
+        setInternships(Array.isArray(data) ? data : []);
+        if (statsData?.internships !== undefined) setStats(statsData);
+      })
+      .catch(() => {})
+      .finally(() => setLoading(false));
+  }, []);
+
+  const typeLabel = (type) => {
+    if (type === "remote") return t("internship.typeRemote");
+    if (type === "onsite") return t("internship.typeOnsite");
+    if (type === "hybrid") return t("internship.typeHybrid");
+    return type;
+  };
+
   return (
-    <div className="min-h-screen bg-surface">
-      <header className="border-b border-border">
+    <div className="min-h-screen bg-white dark:bg-dark-bg">
+      <Helmet>
+        <title>StageLink - Stages & Alternances à Madagascar</title>
+        <meta name="description" content="Trouvez votre prochain stage ou alternance à Madagascar. StageLink connecte étudiants et entreprises." />
+        <meta property="og:title" content="StageLink - Stages & Alternances à Madagascar" />
+        <meta property="og:description" content="La plateforme de mise en relation étudiants-entreprises pour les stages à Madagascar." />
+        <meta property="og:type" content="website" />
+        <meta property="og:url" content="https://stagelink-ten.vercel.app/" />
+        <link rel="canonical" href="https://stagelink-ten.vercel.app/" />
+      </Helmet>
+      <header className="border-b border-border dark:border-dark-border">
         <div className="max-w-6xl mx-auto px-4 h-16 flex items-center justify-between">
-          <Link to="/" className="flex items-center gap-2 text-xl font-bold text-primary font-heading">
-            <svg width="28" height="28" viewBox="0 0 32 32" fill="none">
-              <rect width="32" height="32" rx="8" fill="#0369A1"/>
-              <path d="M16 8L24 14V24H8V14L16 8Z" fill="white" opacity="0.9"/>
-              <path d="M16 12L20 15V20H12V15L16 12Z" fill="#0EA5E9"/>
-            </svg>
-            StageLink
-          </Link>
-          <nav className="flex items-center gap-3">
-            <Link to="/login">
-              <Button variant="ghost" size="sm">Connexion</Button>
-            </Link>
-            <Link to="/register">
-              <Button variant="primary" size="sm">S'inscrire</Button>
-            </Link>
-          </nav>
+          <div className="flex items-center gap-2 font-bold text-xl text-primary">
+            <Briefcase size={24} /> StageLink
+          </div>
+          <div className="flex items-center gap-2">
+            <ThemeToggle />
+            <LanguageSwitcher />
+            <nav className="flex items-center gap-4 ml-2">
+              <Link to="/login" className="text-sm text-text-muted dark:text-dark-text-muted hover:text-text dark:hover:text-dark-text transition-colors">{t("auth.login")}</Link>
+              <Link to="/register" className="text-sm px-4 py-2 bg-primary text-white rounded-lg hover:bg-primary-dark transition-colors">{t("auth.register")}</Link>
+            </nav>
+          </div>
         </div>
       </header>
 
-      <section className="max-w-6xl mx-auto px-4 py-20 lg:py-32">
-        <div className="text-center max-w-3xl mx-auto">
-          <div className="inline-flex items-center gap-2 px-4 py-1.5 bg-primary-bg rounded-full text-sm font-medium text-primary mb-6">
-            <GraduationCap size={16} />
-            La plateforme de stages connectée
-          </div>
-          <h1 className="text-4xl lg:text-6xl font-bold font-heading text-text leading-tight mb-6">
-            Le stage qui vous correspond,{" "}
-            <span className="text-primary">à portée de clic</span>
-          </h1>
-          <p className="text-lg text-text-muted mb-8 max-w-2xl mx-auto">
-            StageLink connecte les étudiants avec les entreprises qui recrutent. 
-            Trouvez le stage idéal ou recrutez les talents de demain.
-          </p>
-          <div className="flex flex-col sm:flex-row items-center justify-center gap-4">
-            <Link to="/register">
-              <Button variant="cta" size="lg">
-                <GraduationCap size={20} />
-                Je suis étudiant
-              </Button>
-            </Link>
-            <Link to="/register">
-              <Button variant="outline" size="lg">
-                <Building2 size={20} />
-                Je suis une entreprise
-              </Button>
-            </Link>
+      <section className="bg-gradient-to-br from-primary/5 to-primary-bg dark:from-dark-surface dark:to-dark-bg py-20">
+        <div className="max-w-4xl mx-auto px-4 text-center">
+          <h1 className="text-4xl md:text-5xl font-bold mb-4 dark:text-dark-text">{t("home.hero")} <span className="text-primary">{t("home.hero").toLowerCase()}</span></h1>
+          <p className="text-lg text-text-muted dark:text-dark-text-muted mb-8 max-w-2xl mx-auto">{t("home.heroSub")}</p>
+          <div className="flex flex-wrap justify-center gap-4">
+            <Link to="/register" className="px-8 py-3 bg-primary text-white rounded-xl font-semibold hover:bg-primary-dark transition-colors">{t("home.studentCta")}</Link>
+            <Link to="/register" className="px-8 py-3 border-2 border-primary text-primary rounded-xl font-semibold hover:bg-primary-bg dark:hover:bg-dark-hover transition-colors">{t("home.companyCta")}</Link>
           </div>
         </div>
       </section>
 
-      <section className="bg-primary-bg py-16">
+      <section className="py-16">
         <div className="max-w-6xl mx-auto px-4">
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-8">
-            {stats.map((s) => (
-              <div key={s.label} className="text-center">
-                <p className="text-3xl font-bold text-primary">{s.value}</p>
-                <p className="text-sm text-text-muted mt-1">{s.label}</p>
+          <h2 className="text-2xl font-bold mb-2 dark:text-dark-text">{t("home.latestOffers")}</h2>
+          <p className="text-text-muted dark:text-dark-text-muted mb-8">{t("home.latestOffersSub")}</p>
+
+          {loading ? (
+            <div className="flex justify-center py-12">
+              <div className="animate-spin h-8 w-8 border-4 border-primary border-t-transparent rounded-full" />
+            </div>
+          ) : internships.length === 0 ? (
+            <p className="text-center text-text-muted dark:text-dark-text-muted py-12">{t("home.noOffers")}</p>
+          ) : (
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+              {internships.map((internship) => (
+                <div key={internship.id} className="border border-border dark:border-dark-border rounded-xl p-5 hover:shadow-md dark:hover:shadow-dark-border transition-shadow bg-surface dark:bg-dark-surface">
+                  <h3 className="font-semibold text-base mb-1 line-clamp-1 dark:text-dark-text">{internship.title}</h3>
+                  <p className="text-sm text-text-muted dark:text-dark-text-muted mb-3">
+                    {internship.company?.name ? (
+                      <Link to={`/entreprise/${internship.company.id}`} className="hover:text-primary transition-colors" onClick={(e) => e.stopPropagation()}>
+                        {internship.company.name}
+                      </Link>
+                    ) : "Entreprise"}
+                  </p>
+                  <div className="flex flex-wrap gap-x-4 gap-y-1 text-xs text-text-muted dark:text-dark-text-muted mb-3">
+                    {internship.location && <span className="flex items-center gap-1"><MapPin size={12} />{internship.location}</span>}
+                    {internship.type && <span className="flex items-center gap-1"><Briefcase size={12} />{typeLabel(internship.type)}</span>}
+                    {internship.salary > 0 ? <span className="flex items-center gap-1"><Euro size={12} />{internship.salary}€</span> : <span className="flex items-center gap-1 text-gray-400"><Euro size={12} />{t("internship.unpaid")}</span>}
+                    {internship.duration && <span className="flex items-center gap-1"><Clock size={12} />{internship.duration} {t("internship.durationUnit")}</span>}
+                  </div>
+                  <p className="text-xs text-text-muted dark:text-dark-text-muted line-clamp-2 mb-4">{internship.description}</p>
+                  <Link to="/register" className="text-xs font-medium text-primary hover:underline">{t("home.seeOffer")} →</Link>
+                </div>
+              ))}
+            </div>
+          )}
+
+          <div className="text-center mt-8">
+            <Link to="/register" className="text-sm text-primary hover:underline font-medium">{t("home.viewAll")} →</Link>
+          </div>
+        </div>
+      </section>
+
+      <section className="bg-primary-bg dark:bg-dark-surface py-12">
+        <div className="max-w-4xl mx-auto px-4 grid grid-cols-2 md:grid-cols-4 gap-8 text-center">
+          {[
+            { value: `${stats.internships}+`, label: t("stat.offers") },
+            { value: `${stats.students}+`, label: t("stat.students") },
+            { value: `${stats.companies}+`, label: t("stat.companies") },
+            { value: `${stats.placement}%+`, label: t("stat.placement") },
+          ].map((s) => (
+            <div key={s.label}>
+              <p className="text-3xl font-bold text-primary">{s.value}</p>
+              <p className="text-sm text-text-muted dark:text-dark-text-muted">{s.label}</p>
+            </div>
+          ))}
+        </div>
+      </section>
+
+      <section className="py-16">
+        <div className="max-w-6xl mx-auto px-4">
+          <h2 className="text-2xl font-bold text-center mb-10 dark:text-dark-text">{t("home.statsTitle")}</h2>
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+            {featureData.map((f) => (
+              <div key={f.title} className="p-5 border border-border dark:border-dark-border rounded-xl bg-surface dark:bg-dark-surface">
+                <h3 className="font-semibold text-sm mb-2 dark:text-dark-text">{f.title}</h3>
+                <p className="text-xs text-text-muted dark:text-dark-text-muted">{f.desc}</p>
               </div>
             ))}
           </div>
         </div>
       </section>
 
-      <section className="max-w-6xl mx-auto px-4 py-20">
-        <h2 className="text-3xl font-bold text-center mb-12">Pourquoi StageLink ?</h2>
-        <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-6">
-          {features.map((f) => (
-            <div key={f.title} className="text-center p-6">
-              <div className="w-12 h-12 rounded-xl bg-primary-bg flex items-center justify-center mx-auto mb-4">
-                <f.icon size={24} className="text-primary" />
-              </div>
-              <h3 className="font-semibold mb-2">{f.title}</h3>
-              <p className="text-sm text-text-muted">{f.desc}</p>
-            </div>
-          ))}
+      <section className="bg-primary text-white py-16 text-center">
+        <div className="max-w-2xl mx-auto px-4">
+          <h2 className="text-2xl font-bold mb-4">{t("home.readyTitle")}</h2>
+          <p className="opacity-90 mb-6">{t("home.readySub")}</p>
+          <Link to="/register" className="inline-block px-8 py-3 bg-white text-primary rounded-xl font-semibold hover:bg-gray-100 transition-colors">{t("home.createAccount")}</Link>
         </div>
       </section>
 
-      <section className="bg-primary text-white py-16">
-        <div className="max-w-4xl mx-auto px-4 text-center">
-          <h2 className="text-3xl font-bold mb-4">Prêt à commencer ?</h2>
-          <p className="text-white/80 mb-8 max-w-xl mx-auto">
-            Rejoignez des milliers d'étudiants et d'entreprises qui utilisent déjà StageLink.
-          </p>
-          <Link to="/register">
-            <Button variant="cta" size="lg">Créer un compte gratuit</Button>
-          </Link>
-        </div>
-      </section>
-
-      <footer className="border-t border-border py-8">
-        <div className="max-w-6xl mx-auto px-4 text-center text-sm text-text-muted">
-          <p className="font-semibold text-primary mb-1">StageLink</p>
-          <p>&copy; {new Date().getFullYear()} StageLink. Tous droits réservés.</p>
-        </div>
+      <footer className="border-t border-border dark:border-dark-border py-6 text-center text-xs text-text-muted dark:text-dark-text-muted">
+        © {new Date().getFullYear()} StageLink. {t("home.rights")}{" "}
+        <button
+          onClick={() => window.dispatchEvent(new Event("stagelink:open-feedback"))}
+          className="text-primary hover:underline font-medium cursor-pointer"
+        >
+          💡 {t("feedback.button")}
+        </button>
       </footer>
     </div>
   );

@@ -1,8 +1,14 @@
 import { Link } from "react-router-dom";
+import ThemeToggle from "../components/common/ThemeToggle";
+import LanguageSwitcher from "../components/common/LanguageSwitcher";
 
 export default function AuthLayout({ children, title, subtitle }) {
   return (
-    <div className="min-h-screen bg-primary-bg flex flex-col">
+    <div className="min-h-screen bg-primary-bg dark:bg-dark-bg flex flex-col">
+      <div className="flex items-center justify-end gap-1 px-4 pt-4">
+        <ThemeToggle />
+        <LanguageSwitcher />
+      </div>
       <div className="flex-1 flex items-center justify-center px-4 py-12">
         <div className="w-full max-w-md">
           <div className="text-center mb-8">
@@ -15,9 +21,9 @@ export default function AuthLayout({ children, title, subtitle }) {
               StageLink
             </Link>
           </div>
-          <div className="bg-surface rounded-xl border border-border p-8 shadow-sm">
-            {title && <h1 className="text-2xl font-bold text-center mb-1">{title}</h1>}
-            {subtitle && <p className="text-text-muted text-center mb-6">{subtitle}</p>}
+          <div className="bg-surface dark:bg-dark-surface rounded-xl border border-border dark:border-dark-border p-8 shadow-sm">
+            {title && <h1 className="text-2xl font-bold text-center mb-1 dark:text-dark-text">{title}</h1>}
+            {subtitle && <p className="text-text-muted dark:text-dark-text-muted text-center mb-6">{subtitle}</p>}
             {children}
           </div>
         </div>

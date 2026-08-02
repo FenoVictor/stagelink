@@ -12,7 +12,7 @@ class AdminCompanyController extends Controller
 {
     public function index(Request $request): JsonResponse
     {
-        $query = Company::with(['user', 'city', 'internships'])
+        $query = Company::with(['user', 'city'])
             ->withCount('internships');
 
         if ($search = $request->input('search')) {
@@ -94,7 +94,7 @@ class AdminCompanyController extends Controller
         ]);
     }
 
-    public function validate(Company $company): JsonResponse
+    public function validateCompany(Company $company): JsonResponse
     {
         $company->update(['status' => 'validated', 'verified_at' => now()]);
 

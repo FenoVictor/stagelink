@@ -1,8 +1,8 @@
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
-import { FileText, Check, X, Eye, User } from "lucide-react";
+import { FileText, Check, X, Eye, User, Download } from "lucide-react";
 import { internshipService } from "../../services/internshipService";
-import { getErrorMessage } from "../../services/api";
+import api, { getErrorMessage } from "../../services/api";
 import Card from "../../components/ui/Card";
 import Badge from "../../components/ui/Badge";
 import Button from "../../components/ui/Button";
@@ -77,6 +77,16 @@ export default function CompanyApplications() {
       )}
 
       <Modal open={showModal} onClose={() => setShowModal(false)} title={`Candidatures - ${selectedInternship?.title || ""}`} size="lg">
+        {applications.length > 0 && (
+          <div className="flex justify-end mb-3">
+            <a
+              href={`${api.defaults.baseURL}/company/internships/${selectedInternship?.id}/applications/export`}
+              className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium text-text-muted border border-border rounded-lg hover:bg-gray-50 transition-colors"
+            >
+              <Download size={14} /> Export CSV
+            </a>
+          </div>
+        )}
         {applications.length === 0 ? (
           <p className="text-text-muted text-center py-8">Aucune candidature pour cette offre.</p>
         ) : (
@@ -123,6 +133,11 @@ export default function CompanyApplications() {
             {selectedApp.cv_url && (
               <a href={selectedApp.cv_url} target="_blank" rel="noopener noreferrer">
                 <Button variant="outline" size="sm">Voir le CV</Button>
+              </a>
+            )}
+            {selectedApp.cover_letter_url && (
+              <a href={selectedApp.cover_letter_url} target="_blank" rel="noopener noreferrer">
+                <Button variant="outline" size="sm">Voir la lettre de motivation</Button>
               </a>
             )}
             {selectedApp.status === "pending" && (

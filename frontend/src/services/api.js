@@ -34,6 +34,7 @@ api.interceptors.response.use(
 
 export function getErrorMessage(error) {
   if (!error.response) return "Impossible de contacter le serveur. Réessayez plus tard.";
+  if (error.response?.status === 429) return "Trop de tentatives. Réessayez dans 60 secondes.";
   return error.response?.data?.message || "Une erreur est survenue.";
 }
 

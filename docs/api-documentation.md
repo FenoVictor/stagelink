@@ -335,6 +335,107 @@ Retourne la liste de toutes les compétences disponibles.
 
 ---
 
+### Liste des catégories
+
+```
+GET /api/categories
+```
+
+Retourne toutes les catégories disponibles.
+
+**Réponse (200) :**
+
+```json
+[
+  { "id": 1, "name": "Informatique", "slug": "informatique" },
+  { "id": 2, "name": "Data Science", "slug": "data-science" },
+  { "id": 3, "name": "Marketing Digital", "slug": "marketing-digital" }
+]
+```
+
+---
+
+### Page entreprise publique
+
+```
+GET /api/companies/{id}
+```
+
+Retourne le profil public d'une entreprise avec ses offres publiées.
+
+**Réponse (200) :**
+
+```json
+{
+  "id": 5,
+  "name": "TechCorp Madagascar",
+  "description": "Entreprise spécialisée en développement web",
+  "logo": "logos/techcorp.png",
+  "website": "https://techcorp.mg",
+  "location": "Antananarivo",
+  "industry": "Technologies de l'information",
+  "internships": [
+    {
+      "id": 1,
+      "title": "Développeur Full Stack",
+      "type": "hybrid",
+      "location": "Antananarivo",
+      "status": "published",
+      "created_at": "2026-01-10T08:00:00.000000Z"
+    }
+  ]
+}
+```
+
+---
+
+### Statistiques publiques
+
+```
+GET /api/stats
+```
+
+Retourne les statistiques publiques pour la landing page.
+
+**Réponse (200) :**
+
+```json
+{
+  "students": 150,
+  "companies": 25,
+  "internships": 65,
+  "applications": 230,
+  "placement": 78
+}
+```
+
+> `placement` = pourcentage de profils étudiants complétés (bio + school + major + phone).
+
+---
+
+### Filtres de recherche
+
+```
+GET /api/internships/filters
+```
+
+Retourne les options de filtres disponibles (types, catégories, durations, levels).
+
+**Réponse (200) :**
+
+```json
+{
+  "types": ["remote", "onsite", "hybrid"],
+  "categories": [
+    { "id": 1, "name": "Informatique" }
+  ],
+  "durations": ["1 mois", "2 mois", "3 mois", "6 mois"],
+  "levels": ["Licence", "Master", "Ingénieur"]
+}
+```
+
+---
+
 ## Routes authentifiées (tous rôles)
 
 Ces routes nécessitent un token valide, quel que soit le rôle de l'utilisateur.
@@ -850,6 +951,96 @@ Retourne la liste des entretiens de l'utilisateur. Pour un étudiant, seuls ses 
 
 ---
 
+### Mes stages démarrés
+
+```
+GET /api/student/internships
+```
+
+Retourne la liste des stages démarrés/terminés par l'étudiant.
+
+**Réponse (200) :**
+
+```json
+[
+  {
+    "id": 1,
+    "internship_id": 5,
+    "title": "Développeur Full Stack",
+    "company": "TechCorp Madagascar",
+    "start_date": "2026-03-01",
+    "end_date": null,
+    "status": "in_progress"
+  }
+]
+```
+
+---
+
+### Démarrer un stage
+
+```
+POST /api/student/internships/{internship}/start
+```
+
+Marque un stage comme démarré par l'étudiant.
+
+**Réponse (201) :**
+
+```json
+{
+  "message": "Stage démarré.",
+  "internship_student": {
+    "id": 1,
+    "start_date": "2026-03-01",
+    "status": "in_progress"
+  }
+}
+```
+
+---
+
+### Terminer un stage
+
+```
+PUT /api/student/internship-student/{id}/complete
+```
+
+Marque un stage comme terminé.
+
+**Body (JSON) :**
+
+| Champ | Type | Requis | Description |
+|-------|------|--------|-------------|
+| `feedback` | string | Non | Retour d'expérience |
+
+**Réponse (200) :**
+
+```json
+{
+  "message": "Stage terminé.",
+  "internship_student": {
+    "id": 1,
+    "status": "completed",
+    "end_date": "2026-06-01"
+  }
+}
+```
+
+---
+
+### Attestation de stage
+
+```
+GET /api/student/internship-student/{id}/attestation
+```
+
+Génère et retourne l'attestation de stage en PDF.
+
+**Réponse (200) :** Fichier PDF (Content-Type: application/pdf)
+
+---
+
 ### Mes notifications
 
 ```
@@ -908,6 +1099,76 @@ Marque toutes les notifications non lues de l'utilisateur comme lues.
 ```json
 {
   "message": "Tout marqué comme lu"
+}
+```
+
+---
+
+### Changer son mot de passe
+
+```
+POST /api/change-password
+```
+
+Change le mot de passe de l'utilisateur connecté.
+
+**Body (JSON) :**
+
+| Champ | Type | Requis | Description |
+|-------|------|--------|-------------|
+| `current_password` | string | Oui | Mot de passe actuel |
+| `password` | string | Oui | Nouveau mot de passe (min 8) |
+| `password_confirmation` | string | Oui | Confirmation |
+
+**Réponse (200) :**
+
+```json
+{
+  "message": "Mot de passe modifié."
+}
+```
+
+---
+
+### Renvoyer l'email de vérification
+
+```
+POST /api/email/verification/send
+```
+
+Renvoie l'email de vérification à l'utilisateur connecté.
+
+**Réponse (200) :**
+
+```json
+{
+  "message": "Email de vérification renvoyé."
+}
+```
+
+---
+
+### Profil public d'un étudiant
+
+```
+GET /api/students/{user_id}/profile
+```
+
+Retourne le profil public d'un étudiant (sans données sensibles).
+
+**Réponse (200) :**
+
+```json
+{
+  "id": 1,
+  "firstname": "Jean",
+  "lastname": "Dupont",
+  "bio": "Étudiant en informatique passionné",
+  "school": "Université de Fianarantsoa",
+  "major": "Génie Logiciel",
+  "skills": [
+    { "name": "JavaScript", "level": "avancé" }
+  ]
 }
 ```
 
@@ -1218,6 +1479,18 @@ Met à jour les détails d'un entretien. Les entreprises ne peuvent modifier que
 | `location` | string | Non | Lieu physique (max 255) |
 
 **Réponse (200) :** Objet entretien mis à jour avec les relations.
+
+---
+
+### Exporter les candidatures (CSV)
+
+```
+GET /api/company/internships/{id}/applications/export
+```
+
+Exporte les candidatures d'une offre au format CSV.
+
+**Réponse (200) :** Fichier CSV (Content-Type: text/csv)
 
 ---
 
@@ -1935,6 +2208,115 @@ DELETE /api/admin/categories/{id}
 ```json
 {
   "message": "Category deleted successfully."
+}
+```
+
+---
+
+### Quartiers en attente
+
+```
+GET /api/admin/neighborhoods/pending
+```
+
+Retourne la liste des quartiers en attente de validation.
+
+**Réponse (200) :**
+
+```json
+[
+  {
+    "id": 1,
+    "name": "Analakely",
+    "commune": "Antananarivo",
+    "created_by": "Jean Dupont",
+    "status": "pending",
+    "created_at": "2026-02-15T10:00:00.000000Z"
+  }
+]
+```
+
+---
+
+### Nombre de quartiers en attente
+
+```
+GET /api/admin/neighborhoods/pending-count
+```
+
+Retourne le nombre de quartiers en attente.
+
+**Réponse (200) :**
+
+```json
+{
+  "count": 5
+}
+```
+
+---
+
+### Approuver un quartier
+
+```
+POST /api/admin/neighborhoods/{id}/approve
+```
+
+Approuve un quartier soumis par un étudiant.
+
+**Réponse (200) :**
+
+```json
+{
+  "message": "Quartier approuvé."
+}
+```
+
+---
+
+### Rejeter un quartier
+
+```
+POST /api/admin/neighborhoods/{id}/reject
+```
+
+Rejette un quartier soumis par un étudiant.
+
+**Réponse (200) :**
+
+```json
+{
+  "message": "Quartier rejeté."
+}
+```
+
+---
+
+### Créer un quartier (étudiant)
+
+```
+POST /api/neighborhoods
+```
+
+Soumet un nouveau quartier pour approbation admin.
+
+**Body (JSON) :**
+
+| Champ | Type | Requis | Description |
+|-------|------|--------|-------------|
+| `name` | string | Oui | Nom du quartier |
+| `commune_id` | integer | Oui | ID de la commune |
+
+**Réponse (201) :**
+
+```json
+{
+  "message": "Quartier soumis pour approbation.",
+  "neighborhood": {
+    "id": 1,
+    "name": "Analakely",
+    "status": "pending"
+  }
 }
 ```
 

@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
 use App\Models\User;
+use App\Services\AuditService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
@@ -19,7 +20,8 @@ class AdminUserController extends Controller
         if ($search = $request->input('search')) {
             $query->where(function ($q) use ($search) {
                 $q->where('name', 'like', "%{$search}%")
-                    ->orWhereRaw("CONCAT(firstname, ' ', lastname) LIKE ?", ["%{$search}%"])
+                    ->orWhere('firstname', 'like', "%{$search}%")
+                    ->orWhere('lastname', 'like', "%{$search}%")
                     ->orWhere('email', 'like', "%{$search}%");
             });
         }
@@ -111,6 +113,8 @@ class AdminUserController extends Controller
 
         $user->delete();
 
+        AuditService::log('admin_user_delete', "Suppression de l'utilisateur {$user->email}", $user);
+
         Log::info('Utilisateur supprimé par admin', [
             'admin_id' => request()->user()->id,
             'target_user_id' => $user->id,
@@ -129,6 +133,8 @@ class AdminUserController extends Controller
 
         $user->tokens()->delete();
 
+        AuditService::log('admin_user_ban', "Bannissement de {$user->email}", $user);
+
         Log::info('Utilisateur banni', [
             'admin_id' => request()->user()->id,
             'target_user_id' => $user->id,
@@ -140,6 +146,8 @@ class AdminUserController extends Controller
     public function unban(User $user): JsonResponse
     {
         $user->update(['status' => 'active', 'banned_at' => null]);
+
+        AuditService::log('admin_user_unban', "Débannissement de {$user->email}", $user);
 
         Log::info('Utilisateur débanni', [
             'admin_id' => request()->user()->id,
@@ -159,6 +167,8 @@ class AdminUserController extends Controller
 
         $user->tokens()->delete();
 
+        AuditService::log('admin_password_reset', "Réinitialisation du mot de passe de {$user->email}", $user);
+
         DB::table('password_reset_tokens')->where('email', $user->email)->delete();
 
         Log::info('Mot de passe réinitialisé par admin', [
@@ -175,6 +185,7 @@ class AdminUserController extends Controller
             ->join('users', 'password_reset_tokens.email', '=', 'users.email')
             ->select('password_reset_tokens.*', 'users.id as user_id', 'users.name', 'users.firstname', 'users.lastname', 'users.role')
             ->orderBy('password_reset_tokens.created_at', 'desc')
+            ->limit(50)
             ->get()
             ->map(function ($r) {
                 return [

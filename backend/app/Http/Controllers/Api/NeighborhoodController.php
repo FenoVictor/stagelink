@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers\Api;
 
+use App\Events\NewNotification;
 use App\Http\Controllers\Controller;
 use App\Models\Neighborhood;
 use App\Models\Notification;
@@ -38,12 +39,13 @@ class NeighborhoodController extends Controller
         // Notify all admin users
         $admins = User::where('role', 'admin')->get();
         foreach ($admins as $admin) {
-            Notification::create([
+            $notification = Notification::create([
                 'user_id' => $admin->id,
                 'type' => 'neighborhood',
                 'title' => 'Nouveau quartier à valider',
                 'message' => $neighborhood->name . ' a été proposé par ' . ($request->user()->name ?? 'un étudiant') . ' et attend votre validation.',
             ]);
+            broadcast(new NewNotification($notification));
         }
 
         // Auto-assign to proposer's student profile
@@ -69,7 +71,7 @@ class NeighborhoodController extends Controller
         $neighborhoods = Neighborhood::with(['commune.district.region.province', 'creator'])
             ->where('status', 'pending')
             ->orderBy('created_at', 'desc')
-            ->get();
+            ->paginate(50);
 
         return response()->json($neighborhoods);
     }

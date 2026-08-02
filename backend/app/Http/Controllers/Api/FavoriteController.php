@@ -23,6 +23,11 @@ class FavoriteController extends Controller
     public function toggle(Request $request, Internship $internship): JsonResponse
     {
         $user = $request->user();
+
+        if ($user->role !== 'student') {
+            return response()->json(['message' => 'Seuls les étudiants peuvent ajouter des favoris.'], 403);
+        }
+
         $favorite = $user->favorites()->where('internship_id', $internship->id)->first();
 
         if ($favorite) {

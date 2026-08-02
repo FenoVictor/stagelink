@@ -1,6 +1,8 @@
 @import url('https://fonts.googleapis.com/css2?family=Open+Sans:wght@300;400;500;600;700&family=Poppins:wght@400;500;600;700&display=swap');
 @import "tailwindcss";
 
+@custom-variant dark (&:where(.dark, .dark *));
+
 @theme {
   --color-primary: #0369A1;
   --color-primary-dark: #075985;
@@ -15,6 +17,14 @@
   --color-surface: #FFFFFF;
   --color-danger: #EF4444;
   --color-warning: #F59E0B;
+
+  --color-dark-bg: #0F172A;
+  --color-dark-surface: #1E293B;
+  --color-dark-border: #334155;
+  --color-dark-text: #F1F5F9;
+  --color-dark-text-muted: #94A3B8;
+  --color-dark-hover: #334155;
+
   --font-heading: 'Poppins', sans-serif;
   --font-body: 'Open Sans', sans-serif;
 }

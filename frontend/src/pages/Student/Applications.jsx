@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
-import { FileText, Building2, Calendar } from "lucide-react";
+import { FileText, Building2, Calendar, Download } from "lucide-react";
 import { internshipService } from "../../services/internshipService";
 import { getErrorMessage } from "../../services/api";
 import Card from "../../components/ui/Card";
@@ -52,6 +52,11 @@ export default function Applications() {
               </div>
               {app.cover_letter && (
                 <p className="text-sm text-text-muted mt-3 line-clamp-2">{app.cover_letter}</p>
+              )}
+              {app.cover_letter_url && (
+                <a href={app.cover_letter_url} target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-1.5 mt-2 text-xs text-primary hover:underline">
+                  <Download size={12} /> Voir la lettre de motivation
+                </a>
               )}
             </Card>
           ))}

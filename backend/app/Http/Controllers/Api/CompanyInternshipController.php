@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
 use App\Models\Internship;
+use App\Services\AuditService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 
@@ -72,6 +73,8 @@ class CompanyInternshipController extends Controller
             $internship->categories()->sync($request->categories);
         }
 
+        AuditService::log('internship_create', "Offre créée : {$internship->title}", $internship);
+
         $internship->load('categories');
 
         return response()->json($internship, 201);
@@ -79,11 +82,7 @@ class CompanyInternshipController extends Controller
 
     public function show(Request $request, Internship $internship): JsonResponse
     {
-        $company = $request->user()->companyProfile;
-
-        if ($internship->company_id !== $company->id) {
-            return response()->json(['message' => 'Unauthorized.'], 403);
-        }
+        $this->authorize('update', $internship);
 
         $internship->load('categories');
 
@@ -92,11 +91,7 @@ class CompanyInternshipController extends Controller
 
     public function update(Request $request, Internship $internship): JsonResponse
     {
-        $company = $request->user()->companyProfile;
-
-        if ($internship->company_id !== $company->id) {
-            return response()->json(['message' => 'Unauthorized.'], 403);
-        }
+        $this->authorize('update', $internship);
 
         $validated = $request->validate([
             'title' => 'sometimes|string|max:255',
@@ -120,6 +115,10 @@ class CompanyInternshipController extends Controller
             $internship->categories()->sync($request->categories);
         }
 
+        AuditService::log('internship_update', "Offre mise à jour : {$internship->title}", $internship, null, 'success', [
+            'changes' => array_keys($validated),
+        ]);
+
         $internship->load('categories');
 
         return response()->json($internship);
@@ -127,11 +126,9 @@ class CompanyInternshipController extends Controller
 
     public function destroy(Request $request, Internship $internship): JsonResponse
     {
-        $company = $request->user()->companyProfile;
+        $this->authorize('delete', $internship);
 
-        if ($internship->company_id !== $company->id) {
-            return response()->json(['message' => 'Unauthorized.'], 403);
-        }
+        AuditService::log('internship_delete', "Offre supprimée : {$internship->title}", $internship);
 
         $internship->delete();
 

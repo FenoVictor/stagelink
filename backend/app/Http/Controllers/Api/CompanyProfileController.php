@@ -25,7 +25,7 @@ class CompanyProfileController extends Controller
             Log::info('Company profile auto-created', ['user_id' => $user->id]);
         }
 
-        $company->load('user');
+        $company->load(['user', 'city']);
 
         $data = $company->toArray();
         $data['city'] = $company->city ? $company->city->name : null;

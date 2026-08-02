@@ -3,6 +3,7 @@ import { Search, MapPin, Clock, GraduationCap, Euro, Building2, Upload, FileText
 import { internshipService } from "../../services/internshipService";
 import { favoriteService } from "../../services/favoriteService";
 import { conversationService } from "../../services/conversationService";
+import { categoryService } from "../../services/categoryService";
 import api, { getErrorMessage } from "../../services/api";
 import Card from "../../components/ui/Card";
 import Badge from "../../components/ui/Badge";
@@ -12,8 +13,9 @@ import Select from "../../components/ui/Select";
 import EmptyState from "../../components/ui/EmptyState";
 import Modal from "../../components/ui/Modal";
 import Pagination from "../../components/ui/Pagination";
+import ChatModal from "../../components/chat/ChatModal";
 import toast from "react-hot-toast";
-import { useNavigate } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 
 const typeOptions = [
   { value: "", label: "Tous les types" },
@@ -65,15 +67,19 @@ export default function Internships() {
   const [showApply, setShowApply] = useState(false);
   const [coverLetter, setCoverLetter] = useState("");
   const [cvFile, setCvFile] = useState(null);
+  const [coverLetterFile, setCoverLetterFile] = useState(null);
   const [applying, setApplying] = useState(false);
   const [showFilters, setShowFilters] = useState(false);
   const [categories, setCategories] = useState([]);
+  const [showChat, setShowChat] = useState(false);
+  const [chatTarget, setChatTarget] = useState(null);
   const [filterOptions, setFilterOptions] = useState({ locations: [], durations: [], study_levels: [] });
   const fileRef = useRef(null);
+  const coverLetterFileRef = useRef(null);
 
   useEffect(() => {
     Promise.all([
-      api.get("/admin/categories").then(({ data }) => setCategories(Array.isArray(data) ? data : [])).catch(() => {}),
+      categoryService.getCategories().then(setCategories).catch(() => {}),
       internshipService.getFilters().then(setFilterOptions).catch(() => {}),
     ]);
   }, []);
@@ -154,10 +160,8 @@ export default function Internships() {
 
   const handleContact = async (internship, e) => {
     e.stopPropagation();
-    try {
-      await conversationService.start({ internship_id: internship.id, message: "Bonjour, je suis intéressé par cette offre." });
-      navigate("/student/messages");
-    } catch (err) { toast.error(getErrorMessage(err)); }
+    setChatTarget(internship);
+    setShowChat(true);
   };
 
   const handleApply = async () => {
@@ -167,11 +171,13 @@ export default function Internships() {
       const formData = new FormData();
       formData.append("cover_letter", coverLetter);
       if (cvFile) formData.append("cv", cvFile);
+      if (coverLetterFile) formData.append("cover_letter_file", coverLetterFile);
       await internshipService.apply(selected.id, formData);
       toast.success("Candidature envoyée !");
       setShowApply(false);
       setCoverLetter("");
       setCvFile(null);
+      setCoverLetterFile(null);
     } catch (err) { toast.error(getErrorMessage(err)); }
     finally { setApplying(false); }
   };
@@ -289,7 +295,11 @@ export default function Internships() {
                   <div className="flex-1 min-w-0">
                     <h3 className="font-semibold text-lg truncate">{internship.title}</h3>
                     <p className="text-sm text-text-muted flex items-center gap-1.5 mt-0.5">
-                      <Building2 size={14} /> {internship.company?.name || "Entreprise"}
+                      <Building2 size={14} /> {internship.company?.name ? (
+                        <Link to={`/entreprise/${internship.company.id}`} className="hover:text-primary transition-colors" onClick={(e) => e.stopPropagation()}>
+                          {internship.company.name}
+                        </Link>
+                      ) : "Entreprise"}
                     </p>
                   </div>
                   <div className="flex items-center gap-2 ml-3 shrink-0">
@@ -342,7 +352,9 @@ export default function Internships() {
             {selected.company?.name && (
               <div>
                 <h4 className="font-semibold mb-1">Entreprise</h4>
-                <p className="text-sm text-text-muted">{selected.company.name}</p>
+                <Link to={`/entreprise/${selected.company.id}`} className="text-sm text-primary hover:underline">
+                  {selected.company.name}
+                </Link>
               </div>
             )}
             <div className="flex gap-2">
@@ -359,6 +371,24 @@ export default function Internships() {
           <div className="space-y-1.5">
             <label className="block text-sm font-medium">Lettre de motivation</label>
             <textarea className="w-full h-36 px-4 py-2.5 rounded-lg border border-border focus:outline-none focus:ring-2 focus:ring-primary/50 resize-none" placeholder="Présentez votre parcours, vos compétences et expliquez pourquoi vous êtes le candidat idéal pour ce stage." value={coverLetter} onChange={(e) => setCoverLetter(e.target.value)} />
+          </div>
+          <div className="space-y-1.5">
+            <label className="block text-sm font-medium">Lettre de motivation (fichier)</label>
+            <div onClick={() => coverLetterFileRef.current?.click()} className="border-2 border-dashed border-border rounded-lg p-4 text-center cursor-pointer hover:border-primary transition-colors">
+              {coverLetterFile ? (
+                <div className="flex items-center justify-center gap-2">
+                  <FileText size={18} className="text-primary" />
+                  <span className="text-sm text-text-muted">{coverLetterFile.name}</span>
+                  <button onClick={(e) => { e.stopPropagation(); setCoverLetterFile(null); }} className="p-1 rounded-full hover:bg-red-50 cursor-pointer"><X size={14} className="text-danger" /></button>
+                </div>
+              ) : (
+                <div className="flex flex-col items-center gap-1">
+                  <Upload size={20} className="text-text-muted" />
+                  <span className="text-sm text-text-muted">Cliquez pour importer votre lettre de motivation (PDF, DOC, DOCX — 2 Mo max)</span>
+                </div>
+              )}
+            </div>
+            <input ref={coverLetterFileRef} type="file" accept=".pdf,.doc,.docx" className="hidden" onChange={(e) => { const f = e.target.files[0]; if (f) setCoverLetterFile(f); }} />
           </div>
           <div className="space-y-1.5">
             <label className="block text-sm font-medium">CV (optionnel)</label>
@@ -381,6 +411,15 @@ export default function Internships() {
           <Button onClick={handleApply} className="w-full" loading={applying}>Envoyer ma candidature</Button>
         </div>
       </Modal>
+
+      {chatTarget && (
+        <ChatModal
+          open={showChat}
+          onClose={() => { setShowChat(false); setChatTarget(null); }}
+          internship={chatTarget}
+          companyName={chatTarget.company?.name}
+        />
+      )}
     </div>
   );
 }

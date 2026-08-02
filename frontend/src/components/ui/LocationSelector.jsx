@@ -26,22 +26,24 @@ export default function LocationSelector({ communeId, neighborhoodId, onChange }
     locationService.getCountries().then(setCountries).catch(() => {});
   }, []);
 
-  // Sync props → state (profile loaded asynchronously)
+  // Restore full hierarchy when communeId changes (profile loaded)
   useEffect(() => {
-    setSelectedCommune(communeId || "");
+    if (!communeId) return;
+    locationService.getCommuneHierarchy(communeId).then((h) => {
+      if (!h) return;
+      if (h.country) { setSelectedCountry(h.country.id); locationService.getProvinces(h.country.id).then(setProvinces).catch(() => {}); }
+      if (h.province) { setSelectedProvince(h.province.id); locationService.getRegions(h.province.id).then(setRegions).catch(() => {}); }
+      if (h.region) { setSelectedRegion(h.region.id); locationService.getDistricts(h.region.id).then(setDistricts).catch(() => {}); }
+      if (h.district) { setSelectedDistrict(h.district.id); locationService.getCommunes(h.district.id).then(setCommunes).catch(() => {}); }
+      setSelectedCommune(communeId);
+      locationService.getNeighborhoods(communeId).then(setNeighborhoods).catch(() => {});
+    }).catch(() => {});
   }, [communeId]);
 
+  // Sync neighborhoodId prop
   useEffect(() => {
     setSelectedNeighborhood(neighborhoodId || "");
   }, [neighborhoodId]);
-
-  // Fetch neighborhoods for the saved commune on mount/prop change
-  useEffect(() => {
-    if (!communeId) return;
-    locationService.getNeighborhoods(communeId)
-      .then(setNeighborhoods)
-      .catch(() => {});
-  }, [communeId]);
 
   const fetchProvinces = useCallback((countryId) => {
     setSelectedProvince(""); setSelectedRegion(""); setSelectedDistrict(""); setSelectedCommune(""); setSelectedNeighborhood("");

@@ -122,4 +122,60 @@ export const adminService = {
   async deleteCategory(id) {
     await api.delete(`/admin/categories/${id}`);
   },
+
+  // Audit Logs
+  async getAuditLogs(params = {}) {
+    const { data } = await api.get("/admin/audit-logs", { params });
+    return data;
+  },
+
+  async getAuditLogActions() {
+    const { data } = await api.get("/admin/audit-logs/actions");
+    return data;
+  },
+
+  async exportAuditLogs(params = {}) {
+    const response = await api.get("/admin/audit-logs/export", {
+      params,
+      responseType: "blob",
+    });
+    return response;
+  },
+
+  // GDPR
+  async getGdprDataInfo() {
+    const { data } = await api.get("/gdpr/data-info");
+    return data;
+  },
+
+  async exportGdprData() {
+    const response = await api.get("/gdpr/export", {
+      responseType: "blob",
+    });
+    return response;
+  },
+
+  async deleteAccount(passwordData) {
+    const { data } = await api.delete("/gdpr/delete-account", {
+      data: passwordData,
+    });
+    return data;
+  },
+
+  // Security
+  async getSecretsStatus() {
+    const { data } = await api.get("/admin/security/secrets-status");
+    return data;
+  },
+
+  async runSecretsCheck() {
+    const { data } = await api.post("/admin/security/secrets-check");
+    return data;
+  },
+
+  // Metrics / Observability
+  async getMetricsDashboard() {
+    const { data } = await api.get("/admin/metrics/dashboard");
+    return data;
+  },
 };

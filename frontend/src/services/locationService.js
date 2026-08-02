@@ -1,34 +1,58 @@
 import api from "./api";
+import { withCache, clearCache } from "../utils/cache";
+
+function cacheKey(name, id) {
+  return `location_${name}_${id ?? ""}`;
+}
 
 export const locationService = {
   async getCountries() {
-    const { data } = await api.get("/locations/countries");
-    return data;
+    return withCache(cacheKey("countries"), async () => {
+      const { data } = await api.get("/locations/countries");
+      return data;
+    });
   },
 
   async getProvinces(countryId) {
-    const { data } = await api.get(`/locations/${countryId}/provinces`);
-    return data;
+    return withCache(cacheKey("provinces", countryId), async () => {
+      const { data } = await api.get(`/locations/${countryId}/provinces`);
+      return data;
+    });
   },
 
   async getRegions(provinceId) {
-    const { data } = await api.get(`/locations/provinces/${provinceId}/regions`);
-    return data;
+    return withCache(cacheKey("regions", provinceId), async () => {
+      const { data } = await api.get(`/locations/provinces/${provinceId}/regions`);
+      return data;
+    });
   },
 
   async getDistricts(regionId) {
-    const { data } = await api.get(`/locations/regions/${regionId}/districts`);
-    return data;
+    return withCache(cacheKey("districts", regionId), async () => {
+      const { data } = await api.get(`/locations/regions/${regionId}/districts`);
+      return data;
+    });
   },
 
   async getCommunes(districtId) {
-    const { data } = await api.get(`/locations/districts/${districtId}/communes`);
-    return data;
+    return withCache(cacheKey("communes", districtId), async () => {
+      const { data } = await api.get(`/locations/districts/${districtId}/communes`);
+      return data;
+    });
   },
 
   async getNeighborhoods(communeId) {
-    const { data } = await api.get(`/locations/communes/${communeId}/neighborhoods`);
-    return data;
+    return withCache(cacheKey("neighborhoods", communeId), async () => {
+      const { data } = await api.get(`/locations/communes/${communeId}/neighborhoods`);
+      return data;
+    });
+  },
+
+  async getCommuneHierarchy(communeId) {
+    return withCache(cacheKey("hierarchy", communeId), async () => {
+      const { data } = await api.get(`/locations/communes/${communeId}/hierarchy`);
+      return data;
+    });
   },
 
   async proposeNeighborhood(communeId, name) {
@@ -55,4 +79,12 @@ export const locationService = {
     const { data } = await api.post(`/admin/neighborhoods/${id}/reject`);
     return data;
   },
+
+  clearLocationCache() {
+    Object.keys(localStorage)
+      .filter((k) => k.startsWith("sl_cache_location_"))
+      .forEach((k) => localStorage.removeItem(k));
+  },
 };
+
+export { clearCache };

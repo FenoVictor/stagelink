@@ -8,8 +8,9 @@ import Select from "../../components/ui/Select";
 import Card from "../../components/ui/Card";
 import LocationSelector from "../../components/ui/LocationSelector";
 import PasswordChange from "../../components/ui/PasswordChange";
-import { Camera, X, Plus, Upload, FileText, Calendar } from "lucide-react";
+import { Camera, X, Plus, Upload, FileText, Calendar, Search, Sparkles } from "lucide-react";
 import toast from "react-hot-toast";
+import { useTranslation } from "react-i18next";
 
 const levelOptions = [
   { value: "Débutant", label: "Débutant" },
@@ -45,74 +46,65 @@ const genderOptions = [
 const MAX_PHOTO_DIM = 500;
 const PHOTO_QUALITY = 0.8;
 
-function computeReadiness({ photo_url, bio, school, diploma, current_level, cv_path, phone, github, linkedin, portfolio, commune_id, address, skills, languages, birth_date, gender }) {
+function computeReadiness({ photo_url, bio, school, major, cv_path, commune_id, city_id, skills, languages, github, linkedin, portfolio }) {
   const skillCount = skills?.length || 0;
   const langCount = languages?.length || 0;
-
-  const weights = {
-    photo: 10, bio: 10, formation: 15, skills: 15, cv: 10,
-    phone: 5, github: 5, linkedin: 5, portfolio: 5,
-    location: 10, languages: 5, identity: 5,
-  };
 
   let score = 0;
   const points = [];
   const improvements = [];
 
-  if (photo_url) { score += weights.photo; points.push("Photo de profil"); }
+  // Photo: 10 pts
+  if (photo_url) { score += 10; points.push("Photo de profil"); }
   else improvements.push("Ajouter une photo professionnelle");
 
-  if (bio?.trim()) { score += weights.bio; points.push("Bio renseignée"); }
-  else improvements.push("Ajouter une bio");
-
-  let formationOk = false;
-  if (school?.trim()) { score += 5; formationOk = true; }
-  if (diploma?.trim()) { score += 5; formationOk = true; }
-  if (current_level?.trim()) { score += 5; formationOk = true; }
-  if (formationOk) points.push("Formation renseignée");
-  else improvements.push("Renseigner votre formation");
-
-  const skillScore = Math.min(skillCount, 3) / 3 * weights.skills;
-  score += skillScore;
-  if (skillCount >= 3) points.push(`${skillCount} compétences`);
-  else if (skillCount > 0) points.push(`${skillCount} compétence${skillCount > 1 ? "s" : ""}`);
-  else improvements.push("Ajouter des compétences");
-  if (skillCount > 0 && skillCount < 3) improvements.push("Ajouter au moins 3 compétences");
-
-  if (cv_path) { score += weights.cv; points.push("CV ajouté"); }
+  // CV: 20 pts
+  if (cv_path) { score += 20; points.push("CV ajouté"); }
   else improvements.push("Ajouter un CV");
 
-  if (phone?.trim()) score += weights.phone;
-  if (github?.trim()) { score += weights.github; points.push("GitHub"); }
-  if (linkedin?.trim()) { score += weights.linkedin; points.push("LinkedIn"); }
-  if (portfolio?.trim()) { score += weights.portfolio; points.push("Portfolio"); }
-  const hasAnyLink = github?.trim() || linkedin?.trim() || portfolio?.trim();
-  if (!hasAnyLink) improvements.push("Ajouter un lien (GitHub, LinkedIn ou Portfolio)");
+  // Bio: 10 pts
+  if (bio?.trim()) { score += 10; points.push("Bio renseignée"); }
+  else improvements.push("Ajouter une bio");
 
-  if (commune_id) { score += 5; points.push("Localisation"); }
-  else improvements.push("Renseigner votre localisation");
-  if (address?.trim()) { score += 5; }
+  // Formation (school + major): 15 pts
+  if (school?.trim() && major?.trim()) { score += 15; points.push("Formation renseignée"); }
+  else improvements.push("Renseigner votre formation (école + filière)");
 
-  if (langCount >= 1) { score += weights.languages; points.push("Langues"); }
+  // Compétences: 20 pts
+  if (skillCount > 0) { score += 20; points.push(`${skillCount} compétence${skillCount > 1 ? "s" : ""}`); }
+  else improvements.push("Ajouter des compétences");
+
+  // Langues: 10 pts
+  if (langCount > 0) { score += 10; points.push("Langues"); }
   else improvements.push("Ajouter une langue");
 
-  if (birth_date) score += 2.5;
-  if (gender) score += 2.5;
-  if (birth_date && gender) points.push("Informations personnelles");
-  else if (!birth_date || !gender) improvements.push("Compléter vos informations personnelles");
+  // Localisation: 10 pts
+  if (commune_id || city_id) { score += 10; points.push("Localisation"); }
+  else improvements.push("Renseigner votre localisation");
+
+  // Liens (github|linkedin|portfolio): 5 pts
+  if (github?.trim() || linkedin?.trim() || portfolio?.trim()) {
+    score += 5;
+    const links = [];
+    if (github?.trim()) links.push("GitHub");
+    if (linkedin?.trim()) links.push("LinkedIn");
+    if (portfolio?.trim()) links.push("Portfolio");
+    points.push(links.join(", "));
+  } else {
+    improvements.push("Ajouter un lien (GitHub, LinkedIn ou Portfolio)");
+  }
 
   const finalScore = Math.round(Math.min(score, 100));
 
   const tip = (() => {
     if (!photo_url) return { icon: "📸", title: "Photo professionnelle", text: "Les profils avec photo reçoivent 7× plus de consultations. Ajoutez une photo professionnelle pour augmenter vos chances." };
-    if (!cv_path) return { icon: "📄", title: "Curriculum Vitae", text: "Les recruteurs consultent systématiquement le CV. Téléchargez le vôtre pour postuler efficacement." };
-    if (skillCount < 3) return { icon: "🎯", title: "Compétences", text: "Ajoutez au moins 3 compétences pour apparaître dans les recherches des entreprises." };
-    if (!github?.trim()) return { icon: "💻", title: "GitHub", text: "Les entreprises recherchent souvent des étudiants avec GitHub. Ajoutez votre profil pour améliorer votre visibilité." };
+    if (!cv_path) return { icon: "📄", title: "Curriculum Vitae", text: "Les recruteurs consultent systématiquement le CV. Téléchargez le vôtre pour postuler efficacement. (20 pts)" };
+    if (skillCount === 0) return { icon: "🎯", title: "Compétences", text: "Ajoutez des compétences pour apparaître dans les recherches des entreprises. (20 pts)" };
     if (!bio?.trim()) return { icon: "✍️", title: "Bio", text: "Une bonne présentation personnelle fait la différence. Parlez de vos objectifs et de ce qui vous motive." };
-    if (!linkedin?.trim()) return { icon: "🔗", title: "LinkedIn", text: "LinkedIn est le réseau professionnel incontournable. Ajoutez votre profil pour étendre votre réseau." };
-    if (!portfolio?.trim()) return { icon: "🌐", title: "Portfolio", text: "Un portfolio démontre concrètement vos réalisations. Partagez le vôtre pour vous démarquer." };
-    if (!school?.trim()) return { icon: "🎓", title: "Formation", text: "Renseignez votre établissement pour que les entreprises puissent vérifier votre parcours." };
-    if (!commune_id) return { icon: "📍", title: "Localisation", text: "Ajoutez votre localisation pour trouver des stages près de chez vous." };
+    if (!school?.trim() || !major?.trim()) return { icon: "🎓", title: "Formation", text: "Renseignez votre établissement et votre filière pour que les entreprises puissent vérifier votre parcours." };
+    if (langCount === 0) return { icon: "🌐", title: "Langues", text: "Les entreprises recherchent des profils multilingues. Ajoutez au moins une langue que vous maîtrisez." };
+    if (!commune_id && !city_id) return { icon: "📍", title: "Localisation", text: "Ajoutez votre localisation pour trouver des stages près de chez vous." };
+    if (!github?.trim() && !linkedin?.trim() && !portfolio?.trim()) return { icon: "🔗", title: "Liens professionnels", text: "GitHub, LinkedIn ou Portfolio — un seul lien suffit pour démontrer votre engagement." };
     return null;
   })();
 
@@ -152,6 +144,7 @@ function compressAndCropImage(file) {
 }
 
 export default function StudentProfile() {
+  const { t } = useTranslation();
   const [profile, setProfile] = useState({
     firstname: "", lastname: "", email: "",
     phone: "", bio: "", school: "", major: "", graduation_year: "",
@@ -176,6 +169,16 @@ export default function StudentProfile() {
   const [readiness, setReadiness] = useState({ score: 0, points: [], improvements: [], tip: null });
   const photoInputRef = useRef(null);
   const skillRef = useRef(null);
+
+  useEffect(() => {
+    const handleClickOutside = (e) => {
+      if (skillRef.current && !skillRef.current.contains(e.target)) {
+        setShowSkillDropdown(false);
+      }
+    };
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
+  }, []);
 
   const formatDate = (dateStr) => {
     if (!dateStr) return "";
@@ -212,21 +215,17 @@ export default function StudentProfile() {
       photo_url: preview,
       bio: profile.bio,
       school: profile.school,
-      diploma: profile.diploma,
-      current_level: profile.current_level,
+      major: profile.major,
       cv_path: cvFileName ? "exists" : null,
-      phone: profile.phone,
+      commune_id: profile.commune_id,
+      city_id: profile.city_id,
       github: profile.github,
       linkedin: profile.linkedin,
       portfolio: profile.portfolio,
-      commune_id: profile.commune_id,
-      address: profile.address,
       skills,
       languages,
-      birth_date: profile.birth_date,
-      gender: profile.gender,
     }));
-  }, [preview, profile.bio, profile.school, profile.diploma, profile.current_level, profile.phone, profile.github, profile.linkedin, profile.portfolio, profile.commune_id, profile.address, profile.birth_date, profile.gender, cvFileName, skills, languages]);
+  }, [preview, profile.bio, profile.school, profile.major, profile.commune_id, profile.city_id, profile.github, profile.linkedin, profile.portfolio, cvFileName, skills, languages]);
 
   const handleChange = (e) => setProfile({ ...profile, [e.target.name]: e.target.value });
 
@@ -301,8 +300,43 @@ export default function StudentProfile() {
 
   const removeLanguage = (idx) => setLanguages(languages.filter((_, i) => i !== idx));
 
+  // Auto-save with debounce
+  const autoSaveTimer = useRef(null);
+  const isFirstRender = useRef(true);
+
+  const doSave = useCallback(async () => {
+    setSaving(true);
+    try {
+      const formData = new FormData();
+      Object.entries(profile).forEach(([key, val]) => {
+        if (val !== null && val !== undefined && !["created_at", "updated_at", "id", "user_id", "photo_url", "cv_url", "city", "commune", "neighborhood", "skills", "languages"].includes(key)) {
+          formData.append(key, val);
+        }
+      });
+      if (removePhotoFlag) formData.append("remove_photo", "1");
+      formData.append("languages", JSON.stringify(languages));
+      skills.forEach((s, i) => {
+        formData.append(`skills[${i}][id]`, s.id);
+        formData.append(`skills[${i}][level]`, s.level || "");
+      });
+      await studentService.updateProfile(formData);
+    } catch (err) {
+      console.error("Auto-save failed", err);
+    } finally {
+      setSaving(false);
+    }
+  }, [profile, languages, skills, removePhotoFlag]);
+
+  useEffect(() => {
+    if (isFirstRender.current) { isFirstRender.current = false; return; }
+    if (autoSaveTimer.current) clearTimeout(autoSaveTimer.current);
+    autoSaveTimer.current = setTimeout(doSave, 3000);
+    return () => { if (autoSaveTimer.current) clearTimeout(autoSaveTimer.current); };
+  }, [profile, languages, skills]);
+
   const handleSubmit = async (e) => {
     e.preventDefault();
+    if (autoSaveTimer.current) clearTimeout(autoSaveTimer.current);
     setSaving(true);
     try {
       const formData = new FormData();
@@ -344,7 +378,7 @@ export default function StudentProfile() {
 
   return (
     <div className="max-w-3xl">
-      <h1 className="text-2xl font-bold mb-6">Mon profil</h1>
+      <h1 className="text-2xl font-bold mb-6">{t("studentProfile.title")}</h1>
 
       {/* Photo modal */}
       {photoModal && (
@@ -378,15 +412,15 @@ export default function StudentProfile() {
             </label>
           </div>
           <div>
-            <p className="text-lg font-semibold">{profile.firstname || profile.lastname ? `${profile.firstname || ""} ${profile.lastname || ""}`.trim() : "Votre nom"}</p>
+            <p className="text-lg font-semibold">{profile.firstname || profile.lastname ? `${profile.firstname || ""} ${profile.lastname || ""}`.trim() : t("studentProfile.firstname")}</p>
             <p className="text-sm text-text-muted">{profile.email}</p>
             <div className="flex gap-3 mt-2">
-              <label className="text-xs text-primary hover:underline cursor-pointer font-medium">
-                Changer
+                <label className="text-xs text-primary hover:underline cursor-pointer font-medium">
+                {t("common.edit")}
                 <input ref={photoInputRef} type="file" name="photo" accept="image/jpeg,image/png,image/webp" onChange={handlePhotoSelect} className="hidden" />
               </label>
               {preview && (
-                <button type="button" onClick={removePhoto} className="text-xs text-danger hover:underline cursor-pointer font-medium">Supprimer</button>
+                <button type="button" onClick={removePhoto} className="text-xs text-danger hover:underline cursor-pointer font-medium">{t("common.delete")}</button>
               )}
             </div>
           </div>
@@ -396,7 +430,7 @@ export default function StudentProfile() {
       {/* Score de préparation */}
       <Card className="mb-6">
         <div className="flex items-start justify-between mb-3">
-          <h2 className="font-semibold text-lg">🎯 Votre préparation stage</h2>
+          <h2 className="font-semibold text-lg">🎯 {t("studentProfile.readiness")}</h2>
           <span className="text-2xl font-bold text-primary">{readiness.score}<span className="text-base font-normal text-text-muted">/100</span></span>
         </div>
         <div className="w-full h-2.5 bg-gray-100 rounded-full overflow-hidden mb-4">
@@ -410,7 +444,7 @@ export default function StudentProfile() {
         </div>
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           <div>
-            <p className="text-xs font-medium text-text-muted uppercase tracking-wider mb-2">Points forts</p>
+            <p className="text-xs font-medium text-text-muted uppercase tracking-wider mb-2">{t("studentProfile.strengths")}</p>
             {readiness.points.length > 0 ? (
               <ul className="space-y-1">
                 {readiness.points.map((p, i) => (
@@ -418,11 +452,11 @@ export default function StudentProfile() {
                 ))}
               </ul>
             ) : (
-              <p className="text-sm text-text-muted">Commencez à remplir votre profil</p>
+              <p className="text-sm text-text-muted">{t("common.noData")}</p>
             )}
           </div>
           <div>
-            <p className="text-xs font-medium text-text-muted uppercase tracking-wider mb-2">À améliorer</p>
+            <p className="text-xs font-medium text-text-muted uppercase tracking-wider mb-2">{t("studentProfile.improvements")}</p>
             {readiness.improvements.length > 0 ? (
               <ul className="space-y-1">
                 {readiness.improvements.map((imp, i) => (
@@ -442,7 +476,7 @@ export default function StudentProfile() {
           <div className="flex items-start gap-3">
             <span className="text-2xl flex-shrink-0">{readiness.tip.icon}</span>
             <div>
-              <p className="font-semibold text-sm mb-1">💡 Conseil StageLink — {readiness.tip.title}</p>
+              <p className="font-semibold text-sm mb-1">{t("studentProfile.tip")} — {readiness.tip.title}</p>
               <p className="text-sm text-text-muted">{readiness.tip.text}</p>
             </div>
           </div>
@@ -452,14 +486,14 @@ export default function StudentProfile() {
       <form onSubmit={handleSubmit} className="space-y-6">
         {/* Informations personnelles */}
         <Card>
-          <h2 className="font-semibold text-lg mb-4">Informations personnelles</h2>
+          <h2 className="font-semibold text-lg mb-4">{t("studentProfile.personalInfo")}</h2>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <Input id="firstname" label="Prénom" name="firstname" value={profile.firstname || ""} onChange={handleChange} />
-            <Input id="lastname" label="Nom" name="lastname" value={profile.lastname || ""} onChange={handleChange} />
-            <Input id="phone" label="Téléphone" name="phone" value={profile.phone || ""} onChange={handleChange} />
-            <Input id="birth_date" label="Date de naissance" name="birth_date" type="date" value={profile.birth_date || ""} onChange={handleChange} />
-            <Select id="gender" label="Genre" name="gender" value={profile.gender || ""} onChange={handleChange}>
-              <option value="">— Non précisé —</option>
+            <Input id="firstname" label={t("studentProfile.firstname")} name="firstname" value={profile.firstname || ""} onChange={handleChange} />
+            <Input id="lastname" label={t("studentProfile.lastname")} name="lastname" value={profile.lastname || ""} onChange={handleChange} />
+            <Input id="phone" label={t("studentProfile.phone")} name="phone" value={profile.phone || ""} onChange={handleChange} />
+            <Input id="birth_date" label={t("studentProfile.birthDate")} name="birth_date" type="date" value={profile.birth_date || ""} onChange={handleChange} />
+            <Select id="gender" label={t("studentProfile.gender")} name="gender" value={profile.gender || ""} onChange={handleChange}>
+              <option value="">{t("studentProfile.notSpecified")}</option>
               {genderOptions.map((o) => <option key={o.value} value={o.value}>{o.label}</option>)}
             </Select>
           </div>
@@ -502,65 +536,132 @@ export default function StudentProfile() {
 
         {/* Compétences */}
         <Card>
-          <h2 className="font-semibold text-lg mb-4">Compétences</h2>
+          <div className="flex items-center justify-between mb-4">
+            <h2 className="font-semibold text-lg flex items-center gap-2">
+              <Sparkles size={18} className="text-primary" />
+              Compétences
+            </h2>
+            {skills.length > 0 && (
+              <span className="text-xs font-medium text-primary bg-primary/10 px-2.5 py-1 rounded-full">
+                {skills.length} sélectionnée{skills.length > 1 ? "s" : ""}
+              </span>
+            )}
+          </div>
+
+          {/* Search input */}
           <div className="relative" ref={skillRef}>
+            <Search size={16} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-text-muted pointer-events-none" />
             <input
               type="text"
-              placeholder="Rechercher une compétence..."
+              placeholder={`Rechercher parmi ${allSkills.length} compétences...`}
               value={skillQuery}
               onChange={(e) => { setSkillQuery(e.target.value); setShowSkillDropdown(true); }}
               onFocus={() => setShowSkillDropdown(true)}
-              className="w-full px-4 py-2.5 text-sm bg-gray-100 border border-transparent rounded-lg focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary focus:bg-white transition-colors"
+              className="w-full pl-10 pr-4 py-2.5 text-sm bg-gray-100 border border-transparent rounded-lg focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary focus:bg-white transition-colors"
             />
-            {showSkillDropdown && skillQuery && filteredSkills.length > 0 && (
-              <div className="absolute z-10 top-full mt-1 w-full bg-white border border-border rounded-lg shadow-lg max-h-48 overflow-y-auto">
-                {filteredSkills.map((s) => (
-                  <button
-                    key={s.id}
-                    type="button"
-                    onClick={() => addSkill(s)}
-                    className="w-full text-left px-4 py-2 text-sm hover:bg-primary-bg transition-colors cursor-pointer"
-                  >
-                    {s.name}
-                  </button>
-                ))}
+
+            {/* Dropdown */}
+            {showSkillDropdown && (
+              <div className="absolute z-10 top-full mt-1 w-full bg-white border border-border rounded-lg shadow-lg max-h-56 overflow-y-auto">
+                {filteredSkills.length > 0 ? (
+                  <>
+                    {skillQuery && (
+                      <p className="px-4 pt-2.5 pb-1 text-[11px] font-medium text-text-muted uppercase tracking-wider">
+                        {filteredSkills.length} résultat{filteredSkills.length > 1 ? "s" : ""}
+                      </p>
+                    )}
+                    {filteredSkills.slice(0, skillQuery ? filteredSkills.length : 20).map((s) => (
+                      <button
+                        key={s.id}
+                        type="button"
+                        onClick={() => addSkill(s)}
+                        className="w-full text-left px-4 py-2.5 text-sm hover:bg-primary/5 transition-colors cursor-pointer flex items-center justify-between group"
+                      >
+                        <span>{s.name}</span>
+                        <span className="text-[11px] text-primary opacity-0 group-hover:opacity-100 transition-opacity font-medium">
+                          + Ajouter
+                        </span>
+                      </button>
+                    ))}
+                    {!skillQuery && filteredSkills.length > 20 && (
+                      <p className="px-4 py-2 text-xs text-text-muted text-center border-t border-border">
+                        Tapez pour affiner la recherche...
+                      </p>
+                    )}
+                  </>
+                ) : (
+                  <div className="px-4 py-6 text-center">
+                    <p className="text-sm text-text-muted">
+                      {skillQuery ? (
+                        <>Aucune compétence trouvée pour « <strong>{skillQuery}</strong> »</>
+                      ) : (
+                        "Aucune compétence disponible"
+                      )}
+                    </p>
+                  </div>
+                )}
               </div>
             )}
           </div>
-          {skills.length > 0 && (
-            <div className="mt-3 flex flex-wrap gap-2">
-              {skills.map((s) => (
-                <span
-                  key={s.id}
-                  onClick={() => cycleSkillLevel(s.id)}
-                  className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-primary/10 text-primary rounded-full text-sm cursor-pointer hover:bg-primary/20 transition-colors group"
-                  title={`Niveau : ${s.level} — Cliquez pour changer`}
-                >
-                  {s.name}
-                  <span className="text-[10px] opacity-60 ml-0.5">{s.level.charAt(0)}</span>
-                  <button
-                    type="button"
-                    onClick={(e) => { e.stopPropagation(); removeSkill(s.id); }}
-                    className="ml-0.5 hover:text-danger transition-colors cursor-pointer"
+
+          {/* Selected skills tags */}
+          {skills.length > 0 ? (
+            <div className="mt-4 flex flex-wrap gap-2">
+              {skills.map((s) => {
+                const levelColor = {
+                  "Débutant": "bg-blue-100 text-blue-700 border-blue-200",
+                  "Intermédiaire": "bg-amber-100 text-amber-700 border-amber-200",
+                  "Avancé": "bg-orange-100 text-orange-700 border-orange-200",
+                  "Expert": "bg-emerald-100 text-emerald-700 border-emerald-200",
+                }[s.level] || "bg-gray-100 text-gray-700 border-gray-200";
+
+                return (
+                  <span
+                    key={s.id}
+                    onClick={() => cycleSkillLevel(s.id)}
+                    className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-sm cursor-pointer transition-all hover:scale-105 border ${levelColor}`}
+                    title={`Niveau : ${s.level} — Cliquez pour changer`}
                   >
-                    <X size={12} />
-                  </button>
-                </span>
-              ))}
+                    {s.name}
+                    <span className="text-[10px] font-semibold opacity-70">{s.level}</span>
+                    <button
+                      type="button"
+                      onClick={(e) => { e.stopPropagation(); removeSkill(s.id); }}
+                      className="ml-0.5 rounded-full hover:bg-black/10 p-0.5 transition-colors cursor-pointer"
+                    >
+                      <X size={12} />
+                    </button>
+                  </span>
+                );
+              })}
             </div>
+          ) : (
+            <div className="mt-4 flex items-center gap-2 text-sm text-text-muted">
+              <div className="w-8 h-8 rounded-full bg-gray-100 flex items-center justify-center">
+                <Plus size={14} className="text-text-muted" />
+              </div>
+              <span>Ajoutez vos compétences pour améliorer votre visibilité auprès des recruteurs</span>
+            </div>
+          )}
+
+          {skills.length > 0 && skills.length < 3 && (
+            <p className="mt-3 text-xs text-amber-600 flex items-center gap-1">
+              <span className="inline-block w-1.5 h-1.5 rounded-full bg-amber-500" />
+              Ajoutez au moins 3 compétences pour être mieux référencé
+            </p>
           )}
         </Card>
 
         {/* Langues */}
         <Card>
-          <h2 className="font-semibold text-lg mb-4">Langues</h2>
+          <h2 className="font-semibold text-lg mb-4">{t("studentProfile.languages")}</h2>
           <div className="flex items-end gap-2">
             <div className="flex-1">
-              <Input id="lang_name" label="Langue" value={newLang.name} onChange={(e) => setNewLang({ ...newLang, name: e.target.value })} placeholder="Ex: Anglais" />
+              <Input id="lang_name" label={t("studentProfile.languageName")} value={newLang.name} onChange={(e) => setNewLang({ ...newLang, name: e.target.value })} placeholder={t("studentProfile.languageNamePlaceholder")} />
             </div>
             <div className="w-44">
-              <Select label="Niveau" value={newLang.level} onChange={(e) => setNewLang({ ...newLang, level: e.target.value })}>
-                <option value="">— Niveau —</option>
+              <Select label={t("studentProfile.languageLevel")} value={newLang.level} onChange={(e) => setNewLang({ ...newLang, level: e.target.value })}>
+                <option value="">{t("studentProfile.languageLevelSelect")}</option>
                 {languageLevels.map((o) => <option key={o.value} value={o.value}>{o.label}</option>)}
               </Select>
             </div>
@@ -585,7 +686,7 @@ export default function StudentProfile() {
 
         {/* Liens */}
         <Card>
-          <h2 className="font-semibold text-lg mb-4">Liens</h2>
+          <h2 className="font-semibold text-lg mb-4">{t("studentProfile.links")}</h2>
           <div className="space-y-4">
             <Input id="github" label="GitHub" name="github" value={profile.github || ""} onChange={handleChange} placeholder="https://github.com/votre-profil" />
             <Input id="linkedin" label="LinkedIn" name="linkedin" value={profile.linkedin || ""} onChange={handleChange} placeholder="https://linkedin.com/in/votre-profil" />
@@ -595,22 +696,22 @@ export default function StudentProfile() {
 
         {/* Présentation */}
         <Card>
-          <h2 className="font-semibold text-lg mb-4">Présentation</h2>
+          <h2 className="font-semibold text-lg mb-4">{t("studentProfile.presentation")}</h2>
           <div className="space-y-1.5">
-            <label className="block text-sm font-medium">Bio / Présentation personnelle</label>
+            <label className="block text-sm font-medium">{t("studentProfile.bio")}</label>
             <textarea
               name="bio"
               className="w-full h-32 px-4 py-2.5 rounded-lg border border-border focus:outline-none focus:ring-2 focus:ring-primary/50 resize-none text-sm"
               value={profile.bio || ""}
               onChange={handleChange}
-              placeholder="Parlez de vous, de vos objectifs, de ce qui vous motive..."
+              placeholder={t("studentProfile.bioPlaceholder")}
             />
           </div>
         </Card>
 
         {/* CV */}
         <Card>
-          <h2 className="font-semibold text-lg mb-4">Curriculum Vitae</h2>
+          <h2 className="font-semibold text-lg mb-4">{t("studentProfile.cv")}</h2>
           {cvFileName ? (
             <div className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
               <div className="flex items-center gap-3">
@@ -622,14 +723,14 @@ export default function StudentProfile() {
                   {cvUploadedAt && (
                     <p className="text-xs text-text-muted flex items-center gap-1 mt-0.5">
                       <Calendar size={11} />
-                      Ajouté le {formatDate(cvUploadedAt)}
+                      {t("studentProfile.cvUploaded")} {formatDate(cvUploadedAt)}
                     </p>
                   )}
                 </div>
               </div>
               <label className="flex items-center gap-2 px-4 py-2 bg-white border border-border rounded-lg hover:bg-gray-50 transition-colors cursor-pointer text-sm font-medium text-primary">
                 <Upload size={15} />
-                Remplacer
+                {t("studentProfile.cvReplace")}
                 <input type="file" name="cv" accept=".pdf,.doc,.docx" onChange={handleFile} className="hidden" />
               </label>
             </div>
@@ -637,12 +738,12 @@ export default function StudentProfile() {
             <div>
               <label className="inline-flex items-center gap-2 px-4 py-2.5 bg-gray-100 rounded-lg hover:bg-gray-200 transition-colors cursor-pointer text-sm font-medium">
                 <Upload size={16} />
-                Télécharger un CV
+                {t("studentProfile.cvUpload")}
                 <input type="file" name="cv" accept=".pdf,.doc,.docx" onChange={handleFile} className="hidden" />
               </label>
             </div>
           )}
-          <p className="text-xs text-text-muted mt-2">PDF, DOC ou DOCX — max 2 Mo</p>
+          <p className="text-xs text-text-muted mt-2">{t("studentProfile.cvFormats")}</p>
         </Card>
 
         <div className="flex gap-3">

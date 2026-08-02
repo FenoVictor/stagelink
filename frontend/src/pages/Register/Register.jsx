@@ -8,8 +8,10 @@ import Input from "../../components/ui/Input";
 import Select from "../../components/ui/Select";
 import { ROLES } from "../../constants";
 import toast from "react-hot-toast";
+import { useTranslation } from "react-i18next";
 
 export default function Register() {
+  const { t } = useTranslation();
   const { register } = useAuth();
   const navigate = useNavigate();
   const [form, setForm] = useState({
@@ -34,8 +36,8 @@ export default function Register() {
     setLoading(true);
     try {
       const user = await register(form);
-      toast.success("Compte créé avec succès !");
-      navigate(`/${user.role}`);
+      toast.success("Compte créé ! Vérifiez votre email.");
+      navigate("/verify-email");
     } catch (err) {
       const data = err.response?.data;
       if (data?.errors) {
@@ -51,27 +53,25 @@ export default function Register() {
   };
 
   return (
-    <AuthLayout title="Créer un compte" subtitle="Rejoignez StageLink pour trouver ou proposer des stages">
+    <AuthLayout title={t("auth.register")}>
       <form onSubmit={handleSubmit} className="space-y-4">
-        <Input id="firstname" label="Prénom" name="firstname" placeholder="Jean" value={form.firstname} onChange={handleChange} error={errors.firstname} />
-        <Input id="lastname" label="Nom" name="lastname" placeholder="Dupont" value={form.lastname} onChange={handleChange} error={errors.lastname} />
-        <Input id="reg-email" label="Email" name="email" type="email" placeholder="vous@exemple.fr" value={form.email} onChange={handleChange} error={errors.email} />
-        <Select id="role" label="Je suis" name="role" value={form.role} onChange={handleChange} error={errors.role}>
-          <option value={ROLES.STUDENT}>Étudiant</option>
-          <option value={ROLES.COMPANY}>Entreprise</option>
+        <div className="grid grid-cols-2 gap-4">
+          <Input label="Prénom" name="firstname" value={form.firstname} onChange={handleChange} placeholder="Jean" error={errors.firstname} />
+          <Input label="Nom" name="lastname" value={form.lastname} onChange={handleChange} placeholder="Dupont" error={errors.lastname} />
+        </div>
+        <Input label={t("auth.email")} name="email" type="email" value={form.email} onChange={handleChange} placeholder="etudiant@example.com" error={errors.email} />
+        <Select label={t("auth.role")} name="role" value={form.role} onChange={handleChange}>
+          <option value={ROLES.STUDENT}>{t("auth.student")}</option>
+          <option value={ROLES.COMPANY}>{t("auth.company")}</option>
         </Select>
-        <Input id="reg-password" label="Mot de passe" name="password" type="password" placeholder="••••••••" value={form.password} onChange={handleChange} error={errors.password} />
-        <Input id="password_confirmation" label="Confirmer le mot de passe" name="password_confirmation" type="password" placeholder="••••••••" value={form.password_confirmation} onChange={handleChange} error={errors.password_confirmation} />
-        <Button type="submit" variant="primary" size="lg" className="w-full" loading={loading}>
-          Créer mon compte
-        </Button>
+        <Input label={t("auth.password")} name="password" type="password" value={form.password} onChange={handleChange} placeholder="••••••••" error={errors.password} />
+        <Input label="Confirmer le mot de passe" name="password_confirmation" type="password" value={form.password_confirmation} onChange={handleChange} placeholder="••••••••" error={errors.password_confirmation} />
+        <Button className="w-full" loading={loading}>{t("auth.register")}</Button>
+        <p className="text-sm text-center text-text-muted">
+          {t("auth.haveAccount")}{" "}
+          <Link to="/login" className="text-primary hover:underline font-medium">{t("auth.login")}</Link>
+        </p>
       </form>
-      <p className="text-center text-sm text-text-muted mt-6">
-        Déjà un compte ?{" "}
-        <Link to="/login" className="text-primary font-semibold hover:underline">
-          Se connecter
-        </Link>
-      </p>
     </AuthLayout>
   );
 }

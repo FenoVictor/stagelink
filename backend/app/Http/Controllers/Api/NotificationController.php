@@ -27,9 +27,7 @@ class NotificationController extends Controller
 
     public function markAsRead(Request $request, Notification $notification): JsonResponse
     {
-        if ($notification->user_id !== $request->user()->id) {
-            abort(403);
-        }
+        $this->authorize('markAsRead', $notification);
 
         $notification->update(['read_at' => now()]);
 

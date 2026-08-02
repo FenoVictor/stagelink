@@ -1,7 +1,8 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { Bell, Check, CheckCheck, X } from "lucide-react";
 import { notificationService } from "../../services/notificationService";
 import { getErrorMessage } from "../../services/api";
+import { getUserChannel } from "../../services/broadcast";
 import toast from "react-hot-toast";
 
 function timeAgo(date) {
@@ -28,11 +29,27 @@ export default function NotificationBell() {
   const [notifications, setNotifications] = useState([]);
   const [unreadCount, setUnreadCount] = useState(0);
   const [loading, setLoading] = useState(true);
+  const echoRef = useRef(null);
 
   useEffect(() => {
     fetchNotifications();
-    const interval = setInterval(fetchNotifications, 30000);
-    return () => clearInterval(interval);
+
+    const channel = getUserChannel();
+    if (channel) {
+      echoRef.current = channel;
+
+      channel.listen(".notification.new", (data) => {
+        setNotifications((prev) => [{ ...data, read_at: null }, ...prev]);
+        setUnreadCount((prev) => prev + 1);
+      });
+    }
+
+    return () => {
+      if (echoRef.current) {
+        echoRef.current.stopListening(".notification.new");
+        echoRef.current = null;
+      }
+    };
   }, []);
 
   async function fetchNotifications() {

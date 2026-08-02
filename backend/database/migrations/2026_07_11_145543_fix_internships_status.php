@@ -9,11 +9,13 @@ return new class extends Migration
 {
     public function up(): void
     {
+        if (DB::getDriverName() !== 'mysql') return;
         DB::statement("ALTER TABLE internships MODIFY COLUMN status ENUM('draft', 'published', 'closed', 'expired') NOT NULL DEFAULT 'draft'");
     }
 
     public function down(): void
     {
+        if (DB::getDriverName() !== 'mysql') return;
         DB::statement("ALTER TABLE internships MODIFY COLUMN status ENUM('draft', 'open', 'closed', 'filled') NOT NULL DEFAULT 'draft'");
     }
 };

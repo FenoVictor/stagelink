@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
+use App\Models\ActivityLog;
 use App\Models\Internship;
 use App\Models\Interview;
 use App\Models\Notification;
@@ -14,27 +15,26 @@ class StudentDashboardController extends Controller
     public function __invoke(Request $request): JsonResponse
     {
         $user = $request->user();
-        $user->load(['studentProfile', 'skills', 'applications', 'activeInternships']);
+        $user->load(['studentProfile', 'skills', 'applications', 'activeInternships.internship.company']);
 
         $profile = $user->studentProfile;
 
         // Completion
         $completion = $this->computeCompletion($profile, $user);
 
-        // Missing steps
-        $missingSteps = [];
-        if (!$profile->photo && !$profile->photo_url) $missingSteps[] = 'photo';
-        if (!$profile->cv_path) $missingSteps[] = 'cv';
-        if ($user->skills->isEmpty()) $missingSteps[] = 'skills';
-        if (!$profile->bio) $missingSteps[] = 'bio';
-        if (!$profile->school) $missingSteps[] = 'school';
-
-        $achievedSteps = [];
-        if ($profile->photo || $profile->photo_url) $achievedSteps[] = 'photo';
-        if ($profile->cv_path) $achievedSteps[] = 'cv';
-        if (!$user->skills->isEmpty()) $achievedSteps[] = 'skills';
-        if ($profile->bio) $achievedSteps[] = 'bio';
-        if ($profile->school) $achievedSteps[] = 'school';
+        // Missing/achieved steps (8 categories = 100 pts)
+        $steps = [
+            'photo'       => (bool) ($profile->photo || $profile->photo_url),
+            'cv'          => (bool) $profile->cv_path,
+            'bio'         => (bool) $profile->bio,
+            'formation'   => (bool) ($profile->school && $profile->major),
+            'skills'      => !$user->skills->isEmpty(),
+            'languages'   => is_array($profile->languages) && count($profile->languages) > 0,
+            'location'    => (bool) ($profile->commune_id || $profile->city_id),
+            'links'       => (bool) ($profile->github || $profile->linkedin || $profile->portfolio),
+        ];
+        $missingSteps = array_keys(array_filter($steps, fn($v) => !$v));
+        $achievedSteps = array_keys(array_filter($steps));
 
         // Stats
         $appCount = $user->applications->count();
@@ -49,13 +49,15 @@ class StudentDashboardController extends Controller
         $skillNames = $user->skills->pluck('name')->map(fn($n) => mb_strtolower($n))->toArray();
         $major = $profile ? mb_strtolower($profile->major ?? '') : '';
 
-        $internships = Internship::with('category')
+        $allSkillsMap = \App\Models\Skill::pluck('name')->mapWithKeys(fn($n) => [mb_strtolower($n) => $n])->toArray();
+
+        $internships = Internship::with(['category', 'company'])
             ->where('status', 'published')
             ->whereDoesntHave('applications', fn($q) => $q->where('student_id', $user->id))
             ->take(50)
             ->get();
 
-        $scored = $internships->map(function ($internship) use ($skillNames, $major, $user) {
+        $scored = $internships->map(function ($internship) use ($skillNames, $major, $user, $allSkillsMap) {
             $score = 30;
             $catName = $internship->category ? mb_strtolower($internship->category->name) : '';
             $title = mb_strtolower($internship->title);
@@ -77,11 +79,9 @@ class StudentDashboardController extends Controller
             // Suggest missing skills
             $missingSuggestions = [];
             $internshipText = mb_strtolower(($internship->description ?? '') . ' ' . ($internship->requirements ?? ''));
-            $allSkills = \App\Models\Skill::pluck('name')->map(fn($n) => mb_strtolower($n))->toArray();
-            foreach ($allSkills as $s) {
-                if (!in_array($s, $skillNames) && str_contains($internshipText, $s)) {
-                    $originalName = \App\Models\Skill::whereRaw('LOWER(name) = ?', [$s])->value('name');
-                    $missingSuggestions[] = $originalName ?? $s;
+            foreach ($allSkillsMap as $lower => $original) {
+                if (!in_array($lower, $skillNames) && str_contains($internshipText, $lower)) {
+                    $missingSuggestions[] = $original;
                     if (count($missingSuggestions) >= 3) break;
                 }
             }
@@ -159,6 +159,9 @@ class StudentDashboardController extends Controller
         ];
         $tip = $tips[array_rand($tips)];
 
+        $profileViews = ActivityLog::where('action', 'profile_view')->count();
+        $cvViews = ActivityLog::where('action', 'cv_download')->count();
+
         return response()->json([
             'firstname' => $user->firstname,
             'completion' => $completion,
@@ -171,6 +174,8 @@ class StudentDashboardController extends Controller
                 'recommendations_total' => $internships->count(),
                 'active_internships' => $activeInternshipCount,
                 'completed_internships' => $hasCompletedInternship ? $user->activeInternships->where('status', 'completed')->count() : 0,
+                'profile_views' => $profileViews,
+                'cv_views' => $cvViews,
             ],
             'recommendations' => $recommendations,
             'badges' => $badges,
@@ -181,13 +186,17 @@ class StudentDashboardController extends Controller
                 'employer' => $profile->employer,
                 'employed_at' => $profile->employed_at,
             ] : null,
-            'active_internship' => $user->activeInternships->where('status', 'in_progress')->first() ? [
-                'id' => $user->activeInternships->where('status', 'in_progress')->first()->id,
-                'internship_id' => $user->activeInternships->where('status', 'in_progress')->first()->internship_id,
-                'title' => $user->activeInternships->where('status', 'in_progress')->first()->internship->title ?? null,
-                'company' => $user->activeInternships->where('status', 'in_progress')->first()->internship->company->name ?? null,
-                'start_date' => $user->activeInternships->where('status', 'in_progress')->first()->start_date,
-            ] : null,
+            'active_internship' => (function () use ($user) {
+                $active = $user->activeInternships->firstWhere('status', 'in_progress');
+                if (!$active) return null;
+                return [
+                    'id' => $active->id,
+                    'internship_id' => $active->internship_id,
+                    'title' => $active->internship->title ?? null,
+                    'company' => $active->internship->company->name ?? null,
+                    'start_date' => $active->start_date,
+                ];
+            })(),
         ]);
     }
 
@@ -196,24 +205,30 @@ class StudentDashboardController extends Controller
         if (!$profile) return 0;
 
         $score = 0;
+
+        // Photo: 10 pts
         if ($profile->photo || $profile->photo_url) $score += 10;
-        if ($user->firstname) $score += 5;
-        if ($user->lastname) $score += 5;
-        if ($profile->phone || $user->phone) $score += 5;
-        if ($profile->birth_date) $score += 5;
-        if ($profile->gender) $score += 5;
-        if ($profile->city_id || $profile->commune_id) $score += 5;
-        if ($profile->address) $score += 5;
-        if ($profile->school) $score += 8;
-        if ($profile->major) $score += 7;
-        if ($profile->graduation_year) $score += 5;
-        if (!$user->skills->isEmpty()) $score += 15;
-        if ($profile->languages) $score += 8;
-        if ($profile->github) $score += 3;
-        if ($profile->linkedin) $score += 3;
-        if ($profile->portfolio) $score += 3;
-        if ($profile->bio) $score += 4;
-        if ($profile->cv_path) $score += 5;
+
+        // CV: 20 pts
+        if ($profile->cv_path) $score += 20;
+
+        // Bio: 10 pts
+        if ($profile->bio) $score += 10;
+
+        // Formation (school + major): 15 pts
+        if ($profile->school && $profile->major) $score += 15;
+
+        // Compétences: 20 pts
+        if (!$user->skills->isEmpty()) $score += 20;
+
+        // Langues: 10 pts
+        if (is_array($profile->languages) && count($profile->languages) > 0) $score += 10;
+
+        // Localisation: 10 pts
+        if ($profile->commune_id || $profile->city_id) $score += 10;
+
+        // Liens (github|linkedin|portfolio): 5 pts
+        if ($profile->github || $profile->linkedin || $profile->portfolio) $score += 5;
 
         return min(100, $score);
     }

@@ -55,6 +55,10 @@ class InternshipController extends Controller
             $query->where('salary', '<=', $salaryMax);
         }
 
+        if ($cityId = $request->city_id) {
+            $query->where('city_id', $cityId);
+        }
+
         if ($dateFrom = $request->date_from) {
             $query->whereDate('created_at', '>=', $dateFrom);
         }

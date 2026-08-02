@@ -2,7 +2,9 @@
 
 namespace App\Http\Controllers\Api;
 
+use App\Events\NewNotification;
 use App\Http\Controllers\Controller;
+use App\Mail\ApplicationConfirmation;
 use App\Mail\NewApplication;
 use App\Models\Application;
 use App\Models\Internship;
@@ -29,6 +31,7 @@ class ApplicationController extends Controller
     {
         $request->validate([
             'cover_letter' => 'nullable|string',
+            'cover_letter_file' => 'nullable|file|mimes:pdf,doc,docx|max:2048',
             'cv' => 'nullable|file|mimes:pdf,doc,docx|max:2048',
             'status' => 'nullable|in:pending,accepted,rejected,interview',
         ]);
@@ -53,11 +56,17 @@ class ApplicationController extends Controller
                 $data['cv_path'] = $request->file('cv')->store('cvs', 'public');
             }
 
+            if ($request->hasFile('cover_letter_file')) {
+                $data['cover_letter_path'] = $request->file('cover_letter_file')->store('cover_letters', 'public');
+            }
+
             $data['relevance'] = $this->calculateRelevance($request->user(), $internship);
 
             $application = Application::create($data);
 
             DB::commit();
+
+            $application->load('student', 'internship.company.user');
 
             try {
                 Mail::to($internship->company->user->email)
@@ -70,12 +79,23 @@ class ApplicationController extends Controller
             }
 
             try {
-                Notification::create([
+                Mail::to($application->student->email)
+                    ->queue(new ApplicationConfirmation($application));
+            } catch (\Throwable $e) {
+                Log::error('Application confirmation email failed', [
+                    'application_id' => $application->id,
+                    'error' => $e->getMessage(),
+                ]);
+            }
+
+            try {
+                $notification = Notification::create([
                     'user_id' => $internship->company->user_id,
                     'type' => 'application',
                     'title' => 'Nouvelle candidature',
                     'message' => $application->student->name . ' a postulé à "' . $internship->title . '".',
                 ]);
+                broadcast(new NewNotification($notification));
             } catch (\Throwable $e) {
                 Log::error('Application notification creation failed', [
                     'error' => $e->getMessage(),

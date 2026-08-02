@@ -14,6 +14,8 @@ return new class extends Migration
 
     public function up(): void
     {
+        if (DB::getDriverName() !== 'mysql') return;
+
         foreach ($this->tables as $table) {
             DB::statement("ALTER TABLE `{$table}` ENGINE = InnoDB");
         }

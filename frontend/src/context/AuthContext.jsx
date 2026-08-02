@@ -1,5 +1,6 @@
 import { createContext, useContext, useState, useEffect, useCallback } from "react";
 import { authService } from "../services/authService";
+import { getEcho, disconnectEcho } from "../services/broadcast";
 
 const AuthContext = createContext(null);
 
@@ -22,6 +23,7 @@ export function AuthProvider({ children }) {
       const user = await authService.getUser();
       setUser(user);
       localStorage.setItem("user", JSON.stringify(user));
+      getEcho();
     } catch {
       localStorage.removeItem("token");
       localStorage.removeItem("user");
@@ -33,8 +35,26 @@ export function AuthProvider({ children }) {
 
   useEffect(() => { fetchUser(); }, [fetchUser]);
 
+  useEffect(() => {
+    if (user) {
+      getEcho();
+    }
+    return () => { disconnectEcho(); };
+  }, [user]);
+
   const login = async (email, password) => {
     const res = await authService.login(email, password);
+    if (res.requires_2fa) {
+      return { requires_2fa: true, temp_token: res.temp_token };
+    }
+    localStorage.setItem("token", res.token);
+    localStorage.setItem("user", JSON.stringify(res.user));
+    setUser(res.user);
+    return res.user;
+  };
+
+  const verifyTwoFactor = async (code, tempToken) => {
+    const res = await authService.verifyTwoFactor(code, tempToken);
     localStorage.setItem("token", res.token);
     localStorage.setItem("user", JSON.stringify(res.user));
     setUser(res.user);
@@ -50,6 +70,7 @@ export function AuthProvider({ children }) {
   };
 
   const logout = async () => {
+    disconnectEcho();
     try { await authService.logout(); } catch { /* ignore */ }
     localStorage.removeItem("token");
     localStorage.removeItem("user");
@@ -57,7 +78,7 @@ export function AuthProvider({ children }) {
   };
 
   return (
-    <AuthContext.Provider value={{ user, login, register, logout, loading }}>
+    <AuthContext.Provider value={{ user, login, register, logout, loading, verifyTwoFactor }}>
       {children}
     </AuthContext.Provider>
   );

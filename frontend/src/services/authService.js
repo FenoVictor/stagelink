@@ -34,4 +34,21 @@ export const authService = {
     const { data } = await api.post("/reset-password", { email, token, password, password_confirmation });
     return data;
   },
+
+  async verifyEmail(id, hash) {
+    const { data } = await api.get(`/email/verify/${id}/${hash}`);
+    return data;
+  },
+
+  async resendVerification() {
+    const { data } = await api.post("/email/verification/send");
+    return data;
+  },
+
+  async verifyTwoFactor(code, tempToken) {
+    const { data } = await api.post("/2fa/verify", { code }, {
+      headers: { Authorization: `Bearer ${tempToken}` },
+    });
+    return data;
+  },
 };

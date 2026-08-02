@@ -7,6 +7,7 @@ return new class extends Migration
 {
     public function up(): void
     {
+        if (DB::getDriverName() !== 'mysql') return;
         DB::statement("ALTER TABLE applications MODIFY COLUMN status ENUM('pending','accepted','rejected','interview') NOT NULL DEFAULT 'pending'");
     }
 

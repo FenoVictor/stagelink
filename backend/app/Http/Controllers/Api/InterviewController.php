@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers\Api;
 
+use App\Events\NewNotification;
 use App\Http\Controllers\Controller;
 use App\Mail\InterviewScheduled;
 use App\Models\Application;
@@ -43,6 +44,8 @@ class InterviewController extends Controller
 
     public function store(Request $request): JsonResponse
     {
+        $this->authorize('create', Interview::class);
+
         $data = $request->validate([
             'application_id' => 'required|exists:applications,id',
             'date' => 'required|date|after:now',
@@ -53,10 +56,7 @@ class InterviewController extends Controller
 
         $application = Application::findOrFail($data['application_id']);
 
-        $internship = $application->internship;
-        if ($internship->company->user_id !== $request->user()->id) {
-            abort(403);
-        }
+        $this->authorize('update', $application);
 
         $interview = Interview::create([
             'application_id' => $application->id,
@@ -77,12 +77,13 @@ class InterviewController extends Controller
         }
 
         try {
-            Notification::create([
+            $notification = Notification::create([
                 'user_id' => $application->student_id,
                 'type' => 'interview',
                 'title' => 'Entretien programmé',
                 'message' => 'Un entretien a été programmé pour "' . $application->internship->title . '" le ' . $interview->date->format('d/m/Y à H:i') . '.',
             ]);
+            broadcast(new NewNotification($notification));
         } catch (\Throwable $e) {
             Log::error('Interview notification creation failed', [
                 'error' => $e->getMessage(),
@@ -99,11 +100,7 @@ class InterviewController extends Controller
 
     public function update(Request $request, Interview $interview): JsonResponse
     {
-        $user = $request->user();
-
-        if ($user->role === 'company' && $interview->application->internship->company->user_id !== $user->id) {
-            abort(403);
-        }
+        $this->authorize('update', $interview);
 
         $data = $request->validate([
             'date' => 'sometimes|date|after:now',

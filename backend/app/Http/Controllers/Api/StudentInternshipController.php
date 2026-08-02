@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers\Api;
 
+use App\Events\NewNotification;
 use App\Http\Controllers\Controller;
 use App\Models\Application;
 use App\Models\Internship;
@@ -54,12 +55,13 @@ class StudentInternshipController extends Controller
             'status' => 'in_progress',
         ]);
 
-        Notification::create([
+        $notification = Notification::create([
             'user_id' => $internship->company->user_id,
             'type' => 'internship',
             'title' => 'Stage démarré',
             'message' => $request->user()->name . ' a démarré son stage "' . $internship->title . '".',
         ]);
+        broadcast(new NewNotification($notification));
 
         $internshipStudent->load('internship.company');
 

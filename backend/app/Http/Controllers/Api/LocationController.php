@@ -43,4 +43,16 @@ class LocationController extends Controller
             $commune->neighborhoods()->where('verified', true)->orderBy('name')->get(['id', 'name'])
         );
     }
+
+    public function communeHierarchy(Commune $commune): JsonResponse
+    {
+        $commune->load('district.region.province.country');
+        return response()->json([
+            'commune' => ['id' => $commune->id, 'name' => $commune->name],
+            'district' => $commune->district ? ['id' => $commune->district->id, 'name' => $commune->district->name] : null,
+            'region' => $commune->district?->region ? ['id' => $commune->district->region->id, 'name' => $commune->district->region->name] : null,
+            'province' => $commune->district?->region?->province ? ['id' => $commune->district->region->province->id, 'name' => $commune->district->region->province->name] : null,
+            'country' => $commune->district?->region?->province?->country ? ['id' => $commune->district->region->province->country->id, 'name' => $commune->district->region->province->country->name, 'iso_code' => $commune->district->region->province->country->iso_code] : null,
+        ]);
+    }
 }

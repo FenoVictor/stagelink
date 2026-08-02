@@ -5,6 +5,7 @@ import { conversationService } from "../services/conversationService";
 import { notificationService } from "../services/notificationService";
 import { userService } from "../services/userService";
 import { getErrorMessage } from "../services/api";
+import { getConversationChannel } from "../services/broadcast";
 import toast from "react-hot-toast";
 import { useAuth } from "../context/AuthContext";
 
@@ -62,6 +63,7 @@ export default function Messages() {
 
   const messagesEndRef = useRef(null);
   const inputRef = useRef(null);
+  const echoChannelRef = useRef(null);
 
   const scrollToBottom = useCallback(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
@@ -102,8 +104,24 @@ export default function Messages() {
     if (selectedId) {
       fetchMessages();
       fetchNotifications();
-      const interval = setInterval(fetchMessages, 30000);
-      return () => clearInterval(interval);
+
+      const channel = getConversationChannel(selectedId);
+      if (channel) {
+        echoChannelRef.current = channel;
+        channel.listen(".message.new", (data) => {
+          setMessages((prev) => {
+            if (prev.find((m) => m.id === data.id)) return prev;
+            return [...prev, data];
+          });
+        });
+      }
+
+      return () => {
+        if (echoChannelRef.current) {
+          echoChannelRef.current.stopListening(".message.new");
+          echoChannelRef.current = null;
+        }
+      };
     } else {
       setMessages([]);
     }

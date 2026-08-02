@@ -1,6 +1,9 @@
 import api from "./api";
+import { withCache } from "../utils/cache";
 
 export async function getSkills() {
-  const { data } = await api.get("/skills");
-  return data;
+  return withCache("skills", async () => {
+    const { data } = await api.get("/skills");
+    return data;
+  });
 }

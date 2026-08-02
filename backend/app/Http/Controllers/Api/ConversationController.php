@@ -27,13 +27,7 @@ class ConversationController extends Controller
 
     public function show(Request $request, Conversation $conversation): JsonResponse
     {
-        $isParticipant = $conversation->participants()
-            ->where('user_id', $request->user()->id)
-            ->exists();
-
-        if (!$isParticipant) {
-            abort(403);
-        }
+        $this->authorize('view', $conversation);
 
         $conversation->load(['messages.sender', 'student:id,name', 'company:id,name', 'internship:id,title']);
 

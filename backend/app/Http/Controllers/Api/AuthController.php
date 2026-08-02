@@ -6,14 +6,22 @@ use App\Http\Controllers\Controller;
 use App\Models\Company;
 use App\Models\StudentProfile;
 use App\Models\User;
+use App\Notifications\VerifyEmailNotification;
 use Carbon\Carbon;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Log;
+use App\Mail\ForgotPassword;
+use App\Mail\Welcome;
+use App\Services\AuditService;
+use App\Services\LoginLogService;
+use Illuminate\Support\Facades\Crypt;
+use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\Str;
 use Illuminate\Validation\ValidationException;
+use PragmaRX\Google2FA\Google2FA;
 
 class AuthController extends Controller
 {
@@ -61,7 +69,23 @@ class AuthController extends Controller
 
             DB::commit();
 
+            $user->notify(new VerifyEmailNotification());
+
+            try {
+                Mail::to($user->email)->queue(new Welcome($user));
+            } catch (\Throwable $e) {
+                Log::error('Welcome email failed', [
+                    'user_id' => $user->id,
+                    'error' => $e->getMessage(),
+                ]);
+            }
+
             $token = $user->createToken('api-token')->plainTextToken;
+
+            AuditService::log('register', "Inscription en tant que {$user->role}", $user, null, 'success', [
+                'role' => $user->role,
+                'email' => $user->email,
+            ]);
 
             Log::info('User registered', ['user_id' => $user->id, 'role' => $user->role, 'email' => $user->email]);
 
@@ -86,12 +110,33 @@ class AuthController extends Controller
         $user = User::where('email', $request->email)->first();
 
         if (!$user || !Hash::check($request->password, $user->password)) {
+            LoginLogService::log($user, $request->input('email'), false, 'Identifiants incorrects');
+            AuditService::log('login_failed', 'Tentative de connexion échouée', $user, null, 'failed', [
+                'email' => $request->email,
+            ]);
+
             throw ValidationException::withMessages([
                 'email' => __('auth.failed'),
             ]);
         }
 
+        if ($user->two_factor_secret && $user->two_factor_confirmed_at) {
+            $tempToken = $user->createToken('2fa-temp', ['2fa-pending'])->plainTextToken;
+
+            LoginLogService::log($user, $request->input('email'), true);
+            AuditService::log('login', 'Connexion nécessitant 2FA', $user);
+
+            return response()->json([
+                'requires_2fa' => true,
+                'temp_token' => $tempToken,
+                'message' => 'Code 2FA requis.',
+            ]);
+        }
+
         $token = $user->createToken('api-token')->plainTextToken;
+
+        LoginLogService::log($user, $request->input('email'), true);
+        AuditService::log('login', 'Connexion réussie', $user);
 
         Log::info('User logged in', ['user_id' => $user->id, 'email' => $user->email]);
 
@@ -103,6 +148,8 @@ class AuthController extends Controller
 
     public function logout(Request $request): JsonResponse
     {
+        AuditService::log('logout', 'Déconnexion', $request->user());
+
         $request->user()->currentAccessToken()->delete();
 
         Log::info('User logged out', ['user_id' => $request->user()->id]);
@@ -132,6 +179,8 @@ class AuthController extends Controller
 
         $user->update(['password' => Hash::make($request->password)]);
 
+        AuditService::log('password_change', 'Mot de passe modifié', $user);
+
         $user->tokens()->delete();
 
         Log::info('Mot de passe changé', ['user_id' => $user->id]);
@@ -150,15 +199,27 @@ class AuthController extends Controller
             ['token' => Hash::make($token), 'created_at' => now()]
         );
 
-        $resetUrl = url("/reset-password?token={$token}&email={$request->email}");
+        $resetUrl = secure_url("/reset-password?token={$token}&email={$request->email}");
+
+        AuditService::log('password_reset_request', "Demande de réinitialisation pour {$request->email}", null, null, 'success', [
+            'email' => $request->email,
+        ]);
+
+        try {
+            Mail::to($request->email)->queue(new ForgotPassword($request->email, $resetUrl));
+        } catch (\Throwable $e) {
+            Log::error('Password reset email failed', [
+                'email' => $request->email,
+                'error' => $e->getMessage(),
+            ]);
+        }
+
         Log::info('Réinitialisation de mot de passe demandée', [
             'email' => $request->email,
-            'reset_url' => $resetUrl,
         ]);
 
         return response()->json([
             'message' => __('passwords.sent'),
-            'reset_url' => $resetUrl,
         ]);
     }
 
@@ -185,10 +246,69 @@ class AuthController extends Controller
         $user->forceFill(['password' => Hash::make($request->password)])->save();
         $user->tokens()->delete();
 
+        AuditService::log('password_reset', 'Mot de passe réinitialisé', $user);
+
         DB::table('password_reset_tokens')->where('email', $request->email)->delete();
 
         Log::info('Mot de passe réinitialisé', ['user_id' => $user->id, 'email' => $user->email]);
 
         return response()->json(['message' => __('passwords.reset')]);
+    }
+
+    public function verifyTwoFactor(Request $request): JsonResponse
+    {
+        $request->validate([
+            'code' => 'required|string|min:6|max:8',
+        ]);
+
+        $user = $request->user();
+
+        if (!$user || !$user->two_factor_secret || !$request->user()->tokenCan('2fa-pending')) {
+            return response()->json(['message' => 'Session invalide.'], 401);
+        }
+
+        $google2fa = app(Google2FA::class);
+        $secret = Crypt::decryptString($user->two_factor_secret);
+
+        if (!$google2fa->verifyKey($secret, $request->input('code'), 4)) {
+            $recoveryCodes = $user->two_factor_recovery_codes
+                ? json_decode(Crypt::decryptString($user->two_factor_recovery_codes), true)
+                : [];
+            $code = strtoupper($request->input('code'));
+            $found = false;
+
+            if (is_array($recoveryCodes)) {
+                foreach ($recoveryCodes as $i => $recoveryCode) {
+                    if (hash_equals($code, $recoveryCode)) {
+                        $found = true;
+                        unset($recoveryCodes[$i]);
+                        $user->update(['two_factor_recovery_codes' => Crypt::encryptString(json_encode(array_values($recoveryCodes)))]);
+                        break;
+                    }
+                }
+            }
+
+            if (!$found) {
+                return response()->json(['message' => 'Code invalide.'], 422);
+            }
+        }
+
+        $user->currentAccessToken()->delete();
+
+        $token = $user->createToken('api-token')->plainTextToken;
+
+        AuditService::log('login', 'Connexion 2FA complétée', $user);
+
+        return response()->json([
+            'token' => $token,
+            'user' => [
+                'id' => $user->id,
+                'name' => $user->name,
+                'email' => $user->email,
+                'role' => $user->role,
+                'email_verified_at' => $user->email_verified_at?->toISOString(),
+                'photo' => $user->studentProfile?->photo ? url('storage/' . $user->studentProfile->photo) : null,
+            ],
+        ]);
     }
 }

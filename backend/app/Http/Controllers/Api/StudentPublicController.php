@@ -3,12 +3,14 @@
 namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
+use App\Models\ActivityLog;
 use App\Models\User;
 use Illuminate\Http\JsonResponse;
+use Illuminate\Http\Request;
 
 class StudentPublicController extends Controller
 {
-    public function show(User $user): JsonResponse
+    public function show(Request $request, User $user): JsonResponse
     {
         if ($user->role !== 'student') {
             abort(404);
@@ -38,10 +40,15 @@ class StudentPublicController extends Controller
         $data['phone'] = $user->phone;
         $data['photo_url'] = $profile->photo ? url('storage/' . $profile->photo) : null;
         $data['cv_url'] = $profile->cv_path ? url('storage/' . $profile->cv_path) : null;
-        $data['skills'] = $user->skills()->withPivot('level')->get()->map(function ($s) {
-            return ['id' => $s->id, 'name' => $s->name, 'level' => $s->pivot->level];
-        });
+        $data['skills'] = $user->skills->map(fn($s) => ['id' => $s->id, 'name' => $s->name, 'level' => $s->pivot->level]);
         $data['languages'] = $profile->languages;
+
+        ActivityLog::create([
+            'user_id' => $request->user()?->id,
+            'action' => 'profile_view',
+            'ip_address' => $request->ip(),
+            'user_agent' => $request->userAgent(),
+        ]);
 
         return response()->json($data);
     }
