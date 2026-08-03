@@ -71,13 +71,6 @@ jobs:
       - name: Run tests
         working-directory: backend
         run: php artisan test
-        env:
-          DB_CONNECTION: mysql
-          DB_HOST: 127.0.0.1
-          DB_PORT: 3306
-          DB_DATABASE: stagelink_test
-          DB_USERNAME: root
-          DB_PASSWORD: password
 
   frontend-tests:
     name: Frontend Tests
