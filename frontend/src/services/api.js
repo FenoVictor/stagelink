@@ -13,9 +13,30 @@ api.interceptors.request.use((config) => {
   return config;
 });
 
+const RETRYABLE_STATUS = [502, 503, 504];
+const MAX_RETRIES = 2;
+const RETRY_DELAY_MS = 5000;
+
 api.interceptors.response.use(
   (response) => response,
   (error) => {
+    const config = error.config || {};
+    const retryCount = (config.retryCount || 0) + 1;
+    const method = (config.method || "get").toUpperCase();
+    const retryable =
+      retryCount <= MAX_RETRIES &&
+      error.code !== "ECANCELED" &&
+      method === "get" &&
+      (error.code === "ECONNABORTED" ||
+        !error.response ||
+        RETRYABLE_STATUS.includes(error.response.status));
+
+    if (retryable) {
+      config.retryCount = retryCount;
+      const delay = RETRY_DELAY_MS * retryCount;
+      return new Promise((resolve) => setTimeout(() => resolve(api(config)), delay));
+    }
+
     if (!error.response) {
       toast.error("Impossible de contacter le serveur. Réessayez plus tard.");
       return Promise.reject(error);
