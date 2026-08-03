@@ -57,6 +57,10 @@ jobs:
           DB_USERNAME: root
           DB_PASSWORD: password
 
+      - name: Prepare storage
+        working-directory: backend
+        run: mkdir -p storage/framework/cache/data storage/framework/sessions storage/framework/views storage/logs
+
       - name: Run migrations
         working-directory: backend
         run: php artisan migrate --force
