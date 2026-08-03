@@ -99,7 +99,7 @@ export default function Users() {
       await adminService.updateUser(editModal.id, editData);
       toast.success("Utilisateur mis à jour");
       setEditModal(null);
-      load();
+      fetchUsers();
     } catch (err) {
       toast.error(getErrorMessage(err));
     } finally {
@@ -113,7 +113,7 @@ export default function Users() {
       await adminService.banUser(user.id);
       toast.success(`${user.name} a été banni`);
       setBanConfirm(null);
-      load();
+      fetchUsers();
     } catch (err) {
       toast.error(getErrorMessage(err));
     } finally {
@@ -126,7 +126,7 @@ export default function Users() {
     try {
       await adminService.unbanUser(user.id);
       toast.success(`${user.name} a été débanni`);
-      load();
+      fetchUsers();
     } catch (err) {
       toast.error(getErrorMessage(err));
     } finally {
@@ -164,7 +164,7 @@ export default function Users() {
       await adminService.deleteUser(deleteModal.id);
       toast.success("Utilisateur supprimé");
       setDeleteModal(null);
-      load();
+      fetchUsers();
     } catch (err) {
       toast.error(getErrorMessage(err));
     } finally {
@@ -198,7 +198,7 @@ export default function Users() {
       <div className="text-center py-20">
         <XCircle size={48} className="mx-auto text-danger mb-4" />
         <p className="text-danger font-medium mb-4">{error}</p>
-        <Button onClick={load} variant="outline">Réessayer</Button>
+        <Button onClick={fetchUsers} variant="outline">Réessayer</Button>
       </div>
     );
   }

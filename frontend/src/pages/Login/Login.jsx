@@ -102,6 +102,7 @@ export default function Login() {
           <Input
             label={t("auth.password")}
             type="password"
+            showPasswordToggle
             value={form.password}
             onChange={(e) => setForm({ ...form, password: e.target.value })}
             placeholder="••••••••"

@@ -64,8 +64,8 @@ export default function Register() {
           <option value={ROLES.STUDENT}>{t("auth.student")}</option>
           <option value={ROLES.COMPANY}>{t("auth.company")}</option>
         </Select>
-        <Input label={t("auth.password")} name="password" type="password" value={form.password} onChange={handleChange} placeholder="••••••••" error={errors.password} />
-        <Input label="Confirmer le mot de passe" name="password_confirmation" type="password" value={form.password_confirmation} onChange={handleChange} placeholder="••••••••" error={errors.password_confirmation} />
+        <Input label={t("auth.password")} name="password" type="password" showPasswordToggle value={form.password} onChange={handleChange} placeholder="••••••••" error={errors.password} />
+        <Input label="Confirmer le mot de passe" name="password_confirmation" type="password" showPasswordToggle value={form.password_confirmation} onChange={handleChange} placeholder="••••••••" error={errors.password_confirmation} />
         <Button className="w-full" loading={loading}>{t("auth.register")}</Button>
         <p className="text-sm text-center text-text-muted">
           {t("auth.haveAccount")}{" "}
