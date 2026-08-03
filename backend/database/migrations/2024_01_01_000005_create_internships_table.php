@@ -17,7 +17,7 @@ return new class extends Migration
             $table->string('location')->nullable();
             $table->enum('type', ['remote', 'onsite', 'hybrid'])->default('onsite');
             $table->string('duration')->nullable();
-            $table->decimal('salary', 8, 2)->nullable();
+            $table->decimal('salary', 12, 2)->nullable();
             $table->integer('slots')->default(1);
             $table->date('deadline')->nullable();
             $table->enum('status', ['draft', 'open', 'closed', 'filled'])->default('draft');
