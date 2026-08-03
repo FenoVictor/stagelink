@@ -70,7 +70,12 @@ jobs:
 
       - name: Run tests
         working-directory: backend
-        run: php artisan test
+        run: |
+          set -o pipefail
+          php artisan test --display-errors --colors=never 2>&1 | tee test-output.log || status=$?
+          status=${status:-0}
+          grep -E "FAILED|Failed asserting|Error:|Exception|Errors:|Failures:|Tests:" test-output.log | while IFS= read -r line; do echo "::error::$line"; done
+          exit $status
 
   frontend-tests:
     name: Frontend Tests
