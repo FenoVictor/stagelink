@@ -13,13 +13,13 @@ return new class extends Migration
 
         try {
             Schema::table('favorites', function (Blueprint $table) {
-                $table->dropUnique(['user_id', 'internship_id']);
+                $table->dropForeign(['user_id']);
             });
         } catch (\Exception $e) {}
 
         try {
             Schema::table('favorites', function (Blueprint $table) {
-                $table->dropForeign(['user_id']);
+                $table->dropUnique(['user_id', 'internship_id']);
             });
         } catch (\Exception $e) {}
 
@@ -32,6 +32,12 @@ return new class extends Migration
 
     public function down(): void
     {
+        try {
+            Schema::table('favorites', function (Blueprint $table) {
+                $table->dropForeign(['student_id']);
+            });
+        } catch (\Exception $e) {}
+
         try {
             Schema::table('favorites', function (Blueprint $table) {
                 $table->dropUnique(['student_id', 'internship_id']);
