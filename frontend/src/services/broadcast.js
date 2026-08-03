@@ -20,13 +20,16 @@ export function getEcho() {
   const token = localStorage.getItem('token');
   if (!token) return null;
 
+  const reverbHost = import.meta.env.VITE_REVERB_HOST;
+  if (!reverbHost) return null;
+
   const apiUrl = import.meta.env.VITE_API_URL || 'http://localhost:8000/api';
   const backendOrigin = apiUrl.replace(/\/+$/, '').replace(/\/api$/, '');
 
   echoInstance = new Echo({
     broadcaster: 'reverb',
     key: import.meta.env.VITE_REVERB_APP_KEY || 'local-key',
-    wsHost: import.meta.env.VITE_REVERB_HOST || 'localhost',
+    wsHost: reverbHost,
     wsPort: parseInt(import.meta.env.VITE_REVERB_PORT || '8080'),
     wssPort: parseInt(import.meta.env.VITE_REVERB_PORT || '8080'),
     forceTLS: (import.meta.env.VITE_REVERB_SCHEME === 'https'),
