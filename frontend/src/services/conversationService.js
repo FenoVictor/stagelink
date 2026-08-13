@@ -3,7 +3,7 @@ import api from "./api";
 export const conversationService = {
   async getAll() {
     const { data } = await api.get("/conversations");
-    return data;
+    return data?.data ?? data;
   },
 
   async getOne(id) {
@@ -18,7 +18,7 @@ export const conversationService = {
 
   async getMessages(conversationId) {
     const { data } = await api.get(`/conversations/${conversationId}/messages`);
-    return data;
+    return data?.data ?? data;
   },
 
   async sendMessage(conversationId, message) {

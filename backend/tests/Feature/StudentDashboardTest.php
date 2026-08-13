@@ -2,9 +2,6 @@
 
 namespace Tests\Feature;
 
-use App\Models\Company;
-use App\Models\Internship;
-use App\Models\StudentProfile;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\TestCase;
@@ -15,8 +12,9 @@ class StudentDashboardTest extends TestCase
 
     private function createStudent()
     {
-        $user = User::create(['name' => 'Student', 'email' => 'student@test.com', 'password' => bcrypt('password'), 'role' => 'student']);
+        $user = User::factory()->create(['name' => 'Student', 'email' => 'student@test.com', 'role' => 'student', 'email_verified_at' => null]);
         $user->studentProfile()->create([]);
+
         return $user;
     }
 
@@ -25,7 +23,7 @@ class StudentDashboardTest extends TestCase
         $student = $this->createStudent();
         $token = $student->createToken('test')->plainTextToken;
 
-        $response = $this->withHeader('Authorization', 'Bearer ' . $token)
+        $response = $this->withHeader('Authorization', 'Bearer '.$token)
             ->getJson('/api/student/dashboard');
 
         $response->assertOk()
@@ -45,7 +43,7 @@ class StudentDashboardTest extends TestCase
         $student = $this->createStudent();
         $token = $student->createToken('test')->plainTextToken;
 
-        $response = $this->withHeader('Authorization', 'Bearer ' . $token)
+        $response = $this->withHeader('Authorization', 'Bearer '.$token)
             ->getJson('/api/student/dashboard');
 
         $response->assertOk()
@@ -63,7 +61,7 @@ class StudentDashboardTest extends TestCase
         ]);
         $token = $student->createToken('test')->plainTextToken;
 
-        $response = $this->withHeader('Authorization', 'Bearer ' . $token)
+        $response = $this->withHeader('Authorization', 'Bearer '.$token)
             ->getJson('/api/student/dashboard');
 
         $response->assertOk();
@@ -72,10 +70,10 @@ class StudentDashboardTest extends TestCase
 
     public function test_company_cannot_access_student_dashboard(): void
     {
-        $companyUser = User::create(['name' => 'Company', 'email' => 'company@test.com', 'password' => bcrypt('password'), 'role' => 'company']);
+        $companyUser = User::factory()->create(['name' => 'Company', 'email' => 'company@test.com', 'role' => 'company', 'email_verified_at' => null]);
         $token = $companyUser->createToken('test')->plainTextToken;
 
-        $response = $this->withHeader('Authorization', 'Bearer ' . $token)
+        $response = $this->withHeader('Authorization', 'Bearer '.$token)
             ->getJson('/api/student/dashboard');
 
         $response->assertStatus(403);

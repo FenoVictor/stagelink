@@ -25,6 +25,27 @@ export default function StudentView() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [messaging, setMessaging] = useState(false);
+  const [downloadingCv, setDownloadingCv] = useState(false);
+
+  const downloadCv = async () => {
+    if (!profile?.user_id || downloadingCv) return;
+    setDownloadingCv(true);
+    try {
+      const blob = await studentService.downloadCv(profile.user_id);
+      const url = window.URL.createObjectURL(new Blob([blob]));
+      const link = document.createElement("a");
+      link.href = url;
+      link.setAttribute("download", `CV-${profile.firstname || ""}-${profile.lastname || ""}.pdf`);
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      window.URL.revokeObjectURL(url);
+    } catch (err) {
+      toast.error(getErrorMessage(err));
+    } finally {
+      setDownloadingCv(false);
+    }
+  };
 
   useEffect(() => {
     studentService.getPublicProfile(id)
@@ -189,9 +210,13 @@ export default function StudentView() {
             </a>
           )}
           {profile.cv_url && (
-            <a href={profile.cv_url} target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-2 px-4 py-2 bg-primary text-white rounded-lg hover:bg-primary-dark transition-colors text-sm font-medium mt-2">
-              <Download size={16} /> Télécharger le CV
-            </a>
+            <button
+              onClick={downloadCv}
+              disabled={downloadingCv}
+              className="inline-flex items-center gap-2 px-4 py-2 bg-primary text-white rounded-lg hover:bg-primary-dark transition-colors text-sm font-medium mt-2 disabled:opacity-60"
+            >
+              <Download size={16} /> {downloadingCv ? "Téléchargement…" : "Télécharger le CV"}
+            </button>
           )}
         </div>
       </Card>

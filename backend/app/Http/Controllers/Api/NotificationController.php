@@ -11,17 +11,25 @@ class NotificationController extends Controller
 {
     public function index(Request $request): JsonResponse
     {
+        $perPage = min((int) $request->input('per_page', 20), 50);
+
         $notifications = $request->user()->notifications()
-            ->take(50)
-            ->get();
+            ->latest()
+            ->paginate($perPage);
 
         $unreadCount = $request->user()->notifications()
             ->whereNull('read_at')
             ->count();
 
         return response()->json([
-            'notifications' => $notifications,
+            'notifications' => $notifications->items(),
             'unread_count' => $unreadCount,
+            'pagination' => [
+                'total' => $notifications->total(),
+                'per_page' => $notifications->perPage(),
+                'current_page' => $notifications->currentPage(),
+                'last_page' => $notifications->lastPage(),
+            ],
         ]);
     }
 

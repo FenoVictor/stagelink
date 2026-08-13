@@ -14,7 +14,7 @@ class FeedbackTest extends TestCase
 
     private function createUser(string $role = 'admin', string $email = 'feedback@test.com')
     {
-        return User::create(['name' => 'User', 'email' => $email, 'password' => bcrypt('password'), 'role' => $role]);
+        return User::factory()->create(['name' => 'User', 'email' => $email, 'role' => $role, 'email_verified_at' => null]);
     }
 
     public function test_guest_can_submit_feedback(): void
@@ -45,7 +45,7 @@ class FeedbackTest extends TestCase
         $user = $this->createUser('student', 'student@test.com');
         $token = $user->createToken('test')->plainTextToken;
 
-        $response = $this->withHeader('Authorization', 'Bearer ' . $token)
+        $response = $this->withHeader('Authorization', 'Bearer '.$token)
             ->postJson('/api/feedback', [
                 'type' => 'improvement',
                 'message' => 'Ceci est un message suffisamment long pour passer la validation.',
@@ -89,7 +89,7 @@ class FeedbackTest extends TestCase
 
         Feedback::create(['type' => 'feature', 'message' => 'Premier retour très intéressant sur la plateforme.', 'status' => 'new']);
 
-        $response = $this->withHeader('Authorization', 'Bearer ' . $token)
+        $response = $this->withHeader('Authorization', 'Bearer '.$token)
             ->getJson('/api/admin/feedback');
 
         $response->assertOk()
@@ -103,7 +103,7 @@ class FeedbackTest extends TestCase
 
         $feedback = Feedback::create(['type' => 'bug', 'message' => 'Bug détecté dans la recherche de la page d accueil.', 'status' => 'new']);
 
-        $response = $this->withHeader('Authorization', 'Bearer ' . $token)
+        $response = $this->withHeader('Authorization', 'Bearer '.$token)
             ->putJson("/api/admin/feedback/{$feedback->id}", [
                 'status' => 'in_progress',
                 'admin_note' => 'À corriger rapidement.',
@@ -125,7 +125,7 @@ class FeedbackTest extends TestCase
         Feedback::create(['type' => 'feature', 'message' => 'Premier retour utilisateur sur la plateforme.', 'rating' => 5, 'status' => 'new']);
         Feedback::create(['type' => 'bug', 'message' => 'Second retour signalant un bug rencontré.', 'rating' => 3, 'status' => 'done']);
 
-        $response = $this->withHeader('Authorization', 'Bearer ' . $token)
+        $response = $this->withHeader('Authorization', 'Bearer '.$token)
             ->getJson('/api/admin/feedback/stats');
 
         $response->assertOk()
@@ -141,7 +141,7 @@ class FeedbackTest extends TestCase
         $student = $this->createUser('student', 'student2@test.com');
         $token = $student->createToken('test')->plainTextToken;
 
-        $response = $this->withHeader('Authorization', 'Bearer ' . $token)
+        $response = $this->withHeader('Authorization', 'Bearer '.$token)
             ->getJson('/api/admin/feedback');
 
         $response->assertForbidden();

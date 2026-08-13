@@ -4,11 +4,15 @@ namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
 use App\Models\Internship;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
 
 class InternshipController extends Controller
 {
+    private const FULLTEXT_MIN_KEYWORD_LENGTH = 3;
+
     public function index(Request $request): JsonResponse
     {
         $query = Internship::with(['company', 'category:id,name'])
@@ -16,12 +20,7 @@ class InternshipController extends Controller
             ->where('status', 'published');
 
         if ($keyword = $request->keyword) {
-            $query->where(function ($q) use ($keyword) {
-                $q->where('title', 'like', "%{$keyword}%")
-                  ->orWhere('description', 'like', "%{$keyword}%")
-                  ->orWhere('requirements', 'like', "%{$keyword}%")
-                  ->orWhereHas('company', fn($c) => $c->where('name', 'like', "%{$keyword}%"));
-            });
+            $this->applyKeywordFilter($query, $keyword);
         }
 
         if ($location = $request->location) {
@@ -29,7 +28,10 @@ class InternshipController extends Controller
         }
 
         if ($category = $request->category) {
-            $query->where('category_id', $category);
+            $query->where(function ($q) use ($category) {
+                $q->where('category_id', $category)
+                    ->orWhereHas('categories', fn ($c) => $c->whereKey($category));
+            });
         }
 
         if ($type = $request->type) {
@@ -78,10 +80,12 @@ class InternshipController extends Controller
         $perPage = min((int) ($request->per_page ?? 12), 50);
         $internships = $query->paginate($perPage);
 
-        if ($request->user()) {
-            $userFavorites = $request->user()->favorites()->pluck('internship_id')->toArray();
+        $user = $request->user('sanctum');
+        if ($user) {
+            $userFavorites = $user->favorites()->pluck('internship_id')->toArray();
             $internships->getCollection()->transform(function ($item) use ($userFavorites) {
                 $item->is_favorited = in_array($item->id, $userFavorites);
+
                 return $item;
             });
         }
@@ -129,12 +133,35 @@ class InternshipController extends Controller
             'applications_count' => $internship->applications()->count(),
         ];
 
-        if ($request->user()) {
-            $response['is_favorited'] = $request->user()->favorites()
+        $user = $request->user('sanctum');
+        if ($user) {
+            $response['is_favorited'] = $user->favorites()
                 ->where('internship_id', $internship->id)
                 ->exists();
         }
 
         return response()->json($response);
+    }
+
+    private function applyKeywordFilter(Builder $query, string $keyword): void
+    {
+        $query->where(function ($q) use ($keyword) {
+            if ($this->canUseFullText($keyword)) {
+                $q->whereFullText(['title', 'description'], $keyword)
+                    ->orWhere('requirements', 'like', "%{$keyword}%")
+                    ->orWhereHas('company', fn ($c) => $c->where('name', 'like', "%{$keyword}%"));
+            } else {
+                $q->where('title', 'like', "%{$keyword}%")
+                    ->orWhere('description', 'like', "%{$keyword}%")
+                    ->orWhere('requirements', 'like', "%{$keyword}%")
+                    ->orWhereHas('company', fn ($c) => $c->where('name', 'like', "%{$keyword}%"));
+            }
+        });
+    }
+
+    private function canUseFullText(string $keyword): bool
+    {
+        return DB::connection()->getDriverName() === 'mysql'
+            && mb_strlen($keyword) >= self::FULLTEXT_MIN_KEYWORD_LENGTH;
     }
 }

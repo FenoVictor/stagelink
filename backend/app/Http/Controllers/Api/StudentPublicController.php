@@ -5,8 +5,11 @@ namespace App\Http\Controllers\Api;
 use App\Http\Controllers\Controller;
 use App\Models\ActivityLog;
 use App\Models\User;
+use App\Services\StudentProfilePresenter;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Storage;
+use Symfony\Component\HttpFoundation\StreamedResponse;
 
 class StudentPublicController extends Controller
 {
@@ -20,36 +23,47 @@ class StudentPublicController extends Controller
 
         $profile = $user->studentProfile;
 
-        if (!$profile) {
+        if (! $profile) {
             return response()->json(['message' => 'Profil non trouvé.'], 404);
         }
 
-        $data = $profile->toArray();
-        $data['city'] = $profile->city ? $profile->city->name : null;
-        $data['commune'] = $profile->commune ? [
-            'id' => $profile->commune->id,
-            'name' => $profile->commune->name,
-        ] : null;
-        $data['neighborhood'] = $profile->neighborhood ? [
-            'id' => $profile->neighborhood->id,
-            'name' => $profile->neighborhood->name,
-        ] : null;
-        $data['firstname'] = $user->firstname;
-        $data['lastname'] = $user->lastname;
-        $data['email'] = $user->email;
-        $data['phone'] = $user->phone;
-        $data['photo_url'] = $profile->photo ? url('storage/' . $profile->photo) : null;
-        $data['cv_url'] = $profile->cv_path ? url('storage/' . $profile->cv_path) : null;
-        $data['skills'] = $user->skills->map(fn($s) => ['id' => $s->id, 'name' => $s->name, 'level' => $s->pivot->level]);
-        $data['languages'] = $profile->languages;
+        $data = StudentProfilePresenter::present($user, $profile);
 
         ActivityLog::create([
             'user_id' => $request->user()?->id,
             'action' => 'profile_view',
+            'subject_type' => User::class,
+            'subject_id' => $user->id,
             'ip_address' => $request->ip(),
             'user_agent' => $request->userAgent(),
         ]);
 
         return response()->json($data);
+    }
+
+    public function cv(Request $request, User $user): StreamedResponse
+    {
+        if ($user->role !== 'student') {
+            abort(404);
+        }
+
+        $profile = $user->studentProfile;
+
+        if (! $profile || ! $profile->cv_path || ! Storage::disk('public')->exists($profile->cv_path)) {
+            abort(404);
+        }
+
+        ActivityLog::create([
+            'user_id' => $request->user()?->id,
+            'action' => 'cv_download',
+            'subject_type' => User::class,
+            'subject_id' => $user->id,
+            'ip_address' => $request->ip(),
+            'user_agent' => $request->userAgent(),
+        ]);
+
+        $filename = 'CV-'.str_replace(' ', '-', trim($user->name ?? 'etudiant')).'.pdf';
+
+        return Storage::disk('public')->download($profile->cv_path, $filename);
     }
 }

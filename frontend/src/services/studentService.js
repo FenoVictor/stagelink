@@ -18,6 +18,11 @@ export const studentService = {
     return data;
   },
 
+  async downloadCv(userId) {
+    const response = await api.get(`/students/${userId}/cv`, { responseType: "blob" });
+    return response.data;
+  },
+
   async getDashboard() {
     const { data } = await api.get("/student/dashboard");
     return data;
@@ -26,7 +31,7 @@ export const studentService = {
   // Internship journey
   async getMyInternships() {
     const { data } = await api.get("/student/internships");
-    return data;
+    return data?.data ?? data;
   },
 
   async startInternship(internshipId, startDate) {

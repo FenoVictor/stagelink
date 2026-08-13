@@ -44,7 +44,7 @@ class SecurityHeadersTest extends TestCase
 
     public function test_login_returns_429_when_throttled(): void
     {
-        User::create(['name' => 'Test', 'email' => 'throttle@test.com', 'password' => bcrypt('password'), 'role' => 'student']);
+        User::factory()->create(['name' => 'Test', 'email' => 'throttle@test.com', 'role' => 'student', 'email_verified_at' => null]);
 
         for ($i = 0; $i < 5; $i++) {
             $this->postJson('/api/login', [

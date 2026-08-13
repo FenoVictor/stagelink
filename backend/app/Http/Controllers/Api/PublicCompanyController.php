@@ -28,6 +28,7 @@ class PublicCompanyController extends Controller
             'name' => $company->name,
             'description' => $company->description,
             'logo' => $company->logo,
+            'logo_url' => $company->logo_url,
             'website' => $company->website,
             'location' => $company->location,
             'industry' => $company->industry,

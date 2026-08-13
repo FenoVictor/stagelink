@@ -12,12 +12,12 @@ class AdminUserTest extends TestCase
 
     private function createAdmin()
     {
-        return User::create(['name' => 'Admin', 'email' => 'admin@test.com', 'password' => bcrypt('password'), 'role' => 'admin']);
+        return User::factory()->create(['name' => 'Admin', 'email' => 'admin@test.com', 'role' => 'admin', 'email_verified_at' => null]);
     }
 
     private function createStudent()
     {
-        return User::create(['name' => 'Student', 'email' => 'student@test.com', 'password' => bcrypt('password'), 'role' => 'student']);
+        return User::factory()->create(['name' => 'Student', 'email' => 'student@test.com', 'role' => 'student', 'email_verified_at' => null]);
     }
 
     public function test_admin_can_list_users(): void
@@ -25,7 +25,7 @@ class AdminUserTest extends TestCase
         $admin = $this->createAdmin();
         $token = $admin->createToken('test')->plainTextToken;
 
-        $response = $this->withHeader('Authorization', 'Bearer ' . $token)
+        $response = $this->withHeader('Authorization', 'Bearer '.$token)
             ->getJson('/api/admin/users');
 
         $response->assertOk();
@@ -36,7 +36,7 @@ class AdminUserTest extends TestCase
         $student = $this->createStudent();
         $token = $student->createToken('test')->plainTextToken;
 
-        $response = $this->withHeader('Authorization', 'Bearer ' . $token)
+        $response = $this->withHeader('Authorization', 'Bearer '.$token)
             ->getJson('/api/admin/users');
 
         $response->assertStatus(403);
@@ -48,7 +48,7 @@ class AdminUserTest extends TestCase
         $student = $this->createStudent();
         $token = $admin->createToken('test')->plainTextToken;
 
-        $response = $this->withHeader('Authorization', 'Bearer ' . $token)
+        $response = $this->withHeader('Authorization', 'Bearer '.$token)
             ->getJson("/api/admin/users/{$student->id}");
 
         $response->assertOk()
@@ -61,7 +61,7 @@ class AdminUserTest extends TestCase
         $student = $this->createStudent();
         $token = $admin->createToken('test')->plainTextToken;
 
-        $response = $this->withHeader('Authorization', 'Bearer ' . $token)
+        $response = $this->withHeader('Authorization', 'Bearer '.$token)
             ->postJson("/api/admin/users/{$student->id}/ban");
 
         $response->assertOk();
@@ -75,7 +75,7 @@ class AdminUserTest extends TestCase
         $student->update(['status' => 'banned', 'banned_at' => now()]);
         $token = $admin->createToken('test')->plainTextToken;
 
-        $response = $this->withHeader('Authorization', 'Bearer ' . $token)
+        $response = $this->withHeader('Authorization', 'Bearer '.$token)
             ->postJson("/api/admin/users/{$student->id}/unban");
 
         $response->assertOk();
@@ -85,10 +85,10 @@ class AdminUserTest extends TestCase
     public function test_admin_cannot_ban_admin(): void
     {
         $admin = $this->createAdmin();
-        $otherAdmin = User::create(['name' => 'Other Admin', 'email' => 'other@test.com', 'password' => bcrypt('password'), 'role' => 'admin']);
+        $otherAdmin = User::factory()->create(['name' => 'Other Admin', 'email' => 'other@test.com', 'role' => 'admin', 'email_verified_at' => null]);
         $token = $admin->createToken('test')->plainTextToken;
 
-        $response = $this->withHeader('Authorization', 'Bearer ' . $token)
+        $response = $this->withHeader('Authorization', 'Bearer '.$token)
             ->postJson("/api/admin/users/{$otherAdmin->id}/ban");
 
         $response->assertStatus(403);
@@ -100,7 +100,7 @@ class AdminUserTest extends TestCase
         $student = $this->createStudent();
         $token = $admin->createToken('test')->plainTextToken;
 
-        $response = $this->withHeader('Authorization', 'Bearer ' . $token)
+        $response = $this->withHeader('Authorization', 'Bearer '.$token)
             ->deleteJson("/api/admin/users/{$student->id}");
 
         $response->assertOk();
@@ -110,10 +110,10 @@ class AdminUserTest extends TestCase
     public function test_admin_cannot_delete_admin(): void
     {
         $admin = $this->createAdmin();
-        $otherAdmin = User::create(['name' => 'Other Admin', 'email' => 'other@test.com', 'password' => bcrypt('password'), 'role' => 'admin']);
+        $otherAdmin = User::factory()->create(['name' => 'Other Admin', 'email' => 'other@test.com', 'role' => 'admin', 'email_verified_at' => null]);
         $token = $admin->createToken('test')->plainTextToken;
 
-        $response = $this->withHeader('Authorization', 'Bearer ' . $token)
+        $response = $this->withHeader('Authorization', 'Bearer '.$token)
             ->deleteJson("/api/admin/users/{$otherAdmin->id}");
 
         $response->assertStatus(403);
@@ -125,7 +125,7 @@ class AdminUserTest extends TestCase
         $student = $this->createStudent();
         $token = $admin->createToken('test')->plainTextToken;
 
-        $response = $this->withHeader('Authorization', 'Bearer ' . $token)
+        $response = $this->withHeader('Authorization', 'Bearer '.$token)
             ->postJson("/api/admin/users/{$student->id}/reset-password", [
                 'password' => 'newpassword123',
                 'password_confirmation' => 'newpassword123',
@@ -140,7 +140,7 @@ class AdminUserTest extends TestCase
         $student = $this->createStudent();
         $token = $admin->createToken('test')->plainTextToken;
 
-        $response = $this->withHeader('Authorization', 'Bearer ' . $token)
+        $response = $this->withHeader('Authorization', 'Bearer '.$token)
             ->putJson("/api/admin/users/{$student->id}", [
                 'firstname' => 'Jean',
                 'lastname' => 'Dupont',
@@ -156,7 +156,7 @@ class AdminUserTest extends TestCase
 
         $this->createStudent();
 
-        $response = $this->withHeader('Authorization', 'Bearer ' . $token)
+        $response = $this->withHeader('Authorization', 'Bearer '.$token)
             ->getJson('/api/admin/users?search=student');
 
         $response->assertOk();

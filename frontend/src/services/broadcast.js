@@ -14,6 +14,10 @@ function getUser() {
   }
 }
 
+export function isWebSocketEnabled() {
+  return Boolean(import.meta.env.VITE_REVERB_HOST);
+}
+
 export function getEcho() {
   if (echoInstance) return echoInstance;
 

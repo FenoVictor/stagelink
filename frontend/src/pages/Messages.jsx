@@ -5,7 +5,7 @@ import { conversationService } from "../services/conversationService";
 import { notificationService } from "../services/notificationService";
 import { userService } from "../services/userService";
 import { getErrorMessage } from "../services/api";
-import { getConversationChannel } from "../services/broadcast";
+import { getConversationChannel, isWebSocketEnabled } from "../services/broadcast";
 import toast from "react-hot-toast";
 import { useAuth } from "../context/AuthContext";
 
@@ -94,11 +94,33 @@ export default function Messages() {
   const fetchNotifications = useCallback(async () => {
     try {
       const data = await notificationService.getAll();
-      setNotifications(Array.isArray(data) ? data : []);
+      setNotifications(Array.isArray(data) ? data : (data?.notifications || []));
     } catch {
       // silent
     }
   }, []);
+
+  const fetchConversations = useCallback(async () => {
+    try {
+      const data = await conversationService.getAll();
+      setConversations(Array.isArray(data) ? data : []);
+    } catch {
+      // silent
+    }
+  }, []);
+
+  useEffect(() => {
+    let pollId = null;
+    if (!isWebSocketEnabled()) {
+      pollId = setInterval(() => {
+        fetchConversations();
+        if (selectedId) fetchMessages();
+      }, 8000);
+    }
+    return () => {
+      if (pollId) clearInterval(pollId);
+    };
+  }, [selectedId, fetchMessages, fetchConversations]);
 
   useEffect(() => {
     if (selectedId) {
@@ -469,9 +491,9 @@ export default function Messages() {
                           }`}
                         >
                           {msg.message && <p>{msg.message}</p>}
-                          {msg.file_path && (
+                          {msg.file_url && (
                             <a
-                              href={`${(import.meta.env.VITE_API_URL || "http://localhost:8000/api").replace(/\/api$/, "")}/storage/${msg.file_path}`}
+                              href={msg.file_url}
                               target="_blank"
                               rel="noopener noreferrer"
                               className={`inline-flex items-center gap-1.5 mt-1.5 px-2.5 py-1.5 rounded-lg text-xs font-medium ${

@@ -12,8 +12,9 @@ class GDPRTest extends TestCase
 
     private function createStudent()
     {
-        $user = User::create(['name' => 'Student', 'email' => 'student@test.com', 'password' => bcrypt('password'), 'role' => 'student']);
+        $user = User::factory()->create(['name' => 'Student', 'email' => 'student@test.com', 'role' => 'student', 'email_verified_at' => null]);
         $user->studentProfile()->create([]);
+
         return $user;
     }
 
@@ -22,7 +23,7 @@ class GDPRTest extends TestCase
         $student = $this->createStudent();
         $token = $student->createToken('test')->plainTextToken;
 
-        $response = $this->withHeader('Authorization', 'Bearer ' . $token)
+        $response = $this->withHeader('Authorization', 'Bearer '.$token)
             ->getJson('/api/gdpr/data-info');
 
         $response->assertOk()
@@ -34,7 +35,7 @@ class GDPRTest extends TestCase
         $student = $this->createStudent();
         $token = $student->createToken('test')->plainTextToken;
 
-        $response = $this->withHeader('Authorization', 'Bearer ' . $token)
+        $response = $this->withHeader('Authorization', 'Bearer '.$token)
             ->getJson('/api/gdpr/export');
 
         $response->assertOk()
@@ -46,7 +47,7 @@ class GDPRTest extends TestCase
         $student = $this->createStudent();
         $token = $student->createToken('test')->plainTextToken;
 
-        $response = $this->withHeader('Authorization', 'Bearer ' . $token)
+        $response = $this->withHeader('Authorization', 'Bearer '.$token)
             ->deleteJson('/api/gdpr/delete-account', [
                 'password' => 'password',
                 'confirmation' => 'WRONG',
@@ -60,7 +61,7 @@ class GDPRTest extends TestCase
         $student = $this->createStudent();
         $token = $student->createToken('test')->plainTextToken;
 
-        $response = $this->withHeader('Authorization', 'Bearer ' . $token)
+        $response = $this->withHeader('Authorization', 'Bearer '.$token)
             ->deleteJson('/api/gdpr/delete-account', [
                 'confirmation' => 'SUPPRIMER',
             ]);

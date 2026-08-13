@@ -13,7 +13,7 @@ class AdminCategoryTest extends TestCase
 
     private function createAdmin()
     {
-        return User::create(['name' => 'Admin', 'email' => 'admin@test.com', 'password' => bcrypt('password'), 'role' => 'admin']);
+        return User::factory()->create(['name' => 'Admin', 'email' => 'admin@test.com', 'role' => 'admin', 'email_verified_at' => null]);
     }
 
     public function test_admin_can_list_categories(): void
@@ -23,7 +23,7 @@ class AdminCategoryTest extends TestCase
 
         Category::create(['name' => 'Informatique', 'slug' => 'informatique']);
 
-        $response = $this->withHeader('Authorization', 'Bearer ' . $token)
+        $response = $this->withHeader('Authorization', 'Bearer '.$token)
             ->getJson('/api/admin/categories');
 
         $response->assertOk()
@@ -35,7 +35,7 @@ class AdminCategoryTest extends TestCase
         $admin = $this->createAdmin();
         $token = $admin->createToken('test')->plainTextToken;
 
-        $response = $this->withHeader('Authorization', 'Bearer ' . $token)
+        $response = $this->withHeader('Authorization', 'Bearer '.$token)
             ->postJson('/api/admin/categories', [
                 'name' => 'Marketing',
             ]);
@@ -51,7 +51,7 @@ class AdminCategoryTest extends TestCase
 
         $category = Category::create(['name' => 'Old Name', 'slug' => 'old-name']);
 
-        $response = $this->withHeader('Authorization', 'Bearer ' . $token)
+        $response = $this->withHeader('Authorization', 'Bearer '.$token)
             ->putJson("/api/admin/categories/{$category->id}", [
                 'name' => 'New Name',
             ]);
@@ -67,7 +67,7 @@ class AdminCategoryTest extends TestCase
 
         $category = Category::create(['name' => 'To Delete', 'slug' => 'to-delete']);
 
-        $response = $this->withHeader('Authorization', 'Bearer ' . $token)
+        $response = $this->withHeader('Authorization', 'Bearer '.$token)
             ->deleteJson("/api/admin/categories/{$category->id}");
 
         $response->assertOk();
@@ -81,7 +81,7 @@ class AdminCategoryTest extends TestCase
 
         Category::create(['name' => 'Informatique', 'slug' => 'informatique']);
 
-        $response = $this->withHeader('Authorization', 'Bearer ' . $token)
+        $response = $this->withHeader('Authorization', 'Bearer '.$token)
             ->postJson('/api/admin/categories', [
                 'name' => 'Informatique',
             ]);
@@ -94,7 +94,7 @@ class AdminCategoryTest extends TestCase
         $admin = $this->createAdmin();
         $token = $admin->createToken('test')->plainTextToken;
 
-        $response = $this->withHeader('Authorization', 'Bearer ' . $token)
+        $response = $this->withHeader('Authorization', 'Bearer '.$token)
             ->postJson('/api/admin/categories', []);
 
         $response->assertStatus(422)

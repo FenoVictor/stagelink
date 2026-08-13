@@ -20,6 +20,7 @@ return Application::configure(basePath: dirname(__DIR__))
     ->withMiddleware(function (Middleware $middleware): void {
         $middleware->alias([
             'role' => \App\Http\Middleware\CheckRole::class,
+            'banned' => \App\Http\Middleware\EnsureUserIsNotBanned::class,
         ]);
         $middleware->prepend(\App\Http\Middleware\SecurityHeaders::class);
         $middleware->prepend(\App\Http\Middleware\SecretsGuard::class);

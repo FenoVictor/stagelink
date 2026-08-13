@@ -163,9 +163,9 @@ return [
             /*
              * The disk names on which the backups will be stored.
              */
-            'disks' => [
-                'local',
-            ],
+            'disks' => array_values(array_filter(
+                array_map('trim', explode(',', env('BACKUP_DISKS', 'local')))
+            )),
 
             /*
              * Determines whether to allow backups to continue when some targets fail instead of failing completely.
@@ -297,7 +297,9 @@ return [
     'monitor_backups' => [
         [
             'name' => env('APP_NAME', 'laravel-backup'),
-            'disks' => ['local'],
+            'disks' => array_values(array_filter(
+                array_map('trim', explode(',', env('BACKUP_DISKS', 'local')))
+            )),
             'health_checks' => [
                 MaximumAgeInDays::class => 1,
                 MaximumStorageInMegabytes::class => 5000,

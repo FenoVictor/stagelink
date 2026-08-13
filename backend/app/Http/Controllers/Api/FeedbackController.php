@@ -3,6 +3,8 @@
 namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
+use App\Http\Requests\StoreFeedbackRequest;
+use App\Http\Requests\UpdateFeedbackRequest;
 use App\Mail\NewFeedback;
 use App\Models\Feedback;
 use App\Services\AuditService;
@@ -10,19 +12,12 @@ use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Mail;
-use Illuminate\Validation\Rule;
 
 class FeedbackController extends Controller
 {
-    public function store(Request $request): JsonResponse
+    public function store(StoreFeedbackRequest $request): JsonResponse
     {
-        $data = $request->validate([
-            'type' => ['required', Rule::in(Feedback::TYPES)],
-            'message' => 'required|string|min:10|max:3000',
-            'rating' => 'nullable|integer|min:1|max:5',
-            'name' => 'nullable|string|max:120',
-            'email' => 'nullable|email|max:190',
-        ]);
+        $data = $request->validated();
 
         $user = auth('sanctum')->user();
 
@@ -83,12 +78,9 @@ class FeedbackController extends Controller
         return response()->json($feedbacks);
     }
 
-    public function update(Request $request, Feedback $feedback): JsonResponse
+    public function update(UpdateFeedbackRequest $request, Feedback $feedback): JsonResponse
     {
-        $data = $request->validate([
-            'status' => ['nullable', Rule::in(Feedback::STATUSES)],
-            'admin_note' => 'nullable|string|max:2000',
-        ]);
+        $data = $request->validated();
 
         $feedback->update($data);
 

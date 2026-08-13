@@ -12,10 +12,11 @@ use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
 use Laravel\Sanctum\HasApiTokens;
 use Illuminate\Auth\MustVerifyEmail as MustVerifyEmailTrait;
+use Illuminate\Contracts\Auth\MustVerifyEmail;
 
-#[Fillable(['name', 'email', 'password', 'role', 'phone', 'avatar', 'firstname', 'lastname', 'status', 'two_factor_secret', 'two_factor_recovery_codes', 'two_factor_confirmed_at'])]
+#[Fillable(['name', 'email', 'email_verified_at', 'password', 'role', 'phone', 'avatar', 'firstname', 'lastname', 'status', 'banned_at', 'two_factor_secret', 'two_factor_recovery_codes', 'two_factor_confirmed_at'])]
 #[Hidden(['password', 'remember_token', 'two_factor_secret', 'two_factor_recovery_codes'])]
-class User extends Authenticatable
+class User extends Authenticatable implements MustVerifyEmail
 {
     /** @use HasFactory<UserFactory> */
     use HasFactory, Notifiable, HasApiTokens, SoftDeletes, MustVerifyEmailTrait;

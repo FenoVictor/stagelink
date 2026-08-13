@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use App\Models\User;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Storage;
 
 class AdminStudentController extends Controller
 {
@@ -91,7 +92,7 @@ class AdminStudentController extends Controller
 
         $profile = $user->studentProfile;
 
-        $cvUrl = $profile && $profile->cv_path ? url('storage/' . $profile->cv_path) : null;
+        $cvUrl = $profile && $profile->cv_path ? Storage::disk('public')->url($profile->cv_path) : null;
 
         return response()->json([
             'user' => [

@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
 use App\Models\User;
+use App\Notifications\VerifyEmailNotification;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Log;
@@ -15,7 +16,7 @@ class EmailVerificationController extends Controller
     {
         $user = User::find($id);
 
-        if (!$user) {
+        if (! $user) {
             return response()->json(['message' => 'Utilisateur introuvable.'], 404);
         }
 
@@ -23,7 +24,7 @@ class EmailVerificationController extends Controller
             return response()->json(['message' => 'Email déjà vérifié.', 'user' => $user]);
         }
 
-        if (!URL::hasValidSignature($request)) {
+        if (! URL::hasValidSignature($request)) {
             return response()->json(['message' => 'Lien de vérification invalide ou expiré.'], 400);
         }
 
@@ -46,7 +47,7 @@ class EmailVerificationController extends Controller
             return response()->json(['message' => 'Email déjà vérifié.']);
         }
 
-        $user->sendEmailVerificationNotification();
+        $user->notify(new VerifyEmailNotification);
 
         return response()->json(['message' => 'Un nouveau lien de vérification a été envoyé.']);
     }

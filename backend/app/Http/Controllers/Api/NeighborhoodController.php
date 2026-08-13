@@ -4,21 +4,19 @@ namespace App\Http\Controllers\Api;
 
 use App\Events\NewNotification;
 use App\Http\Controllers\Controller;
+use App\Http\Requests\StoreNeighborhoodRequest;
 use App\Models\Neighborhood;
 use App\Models\Notification;
 use App\Models\StudentProfile;
 use App\Models\User;
 use Illuminate\Http\JsonResponse;
-use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Cache;
 
 class NeighborhoodController extends Controller
 {
-    public function store(Request $request): JsonResponse
+    public function store(StoreNeighborhoodRequest $request): JsonResponse
     {
-        $validated = $request->validate([
-            'commune_id' => 'required|exists:communes,id',
-            'name' => 'required|string|max:100',
-        ]);
+        $validated = $request->validated();
 
         $exists = Neighborhood::where('commune_id', $validated['commune_id'])
             ->where('name', $validated['name'])
@@ -43,7 +41,7 @@ class NeighborhoodController extends Controller
                 'user_id' => $admin->id,
                 'type' => 'neighborhood',
                 'title' => 'Nouveau quartier à valider',
-                'message' => $neighborhood->name . ' a été proposé par ' . ($request->user()->name ?? 'un étudiant') . ' et attend votre validation.',
+                'message' => $neighborhood->name.' a été proposé par '.($request->user()->name ?? 'un étudiant').' et attend votre validation.',
             ]);
             broadcast(new NewNotification($notification));
         }
@@ -62,6 +60,7 @@ class NeighborhoodController extends Controller
     public function pendingCount(): JsonResponse
     {
         $count = Neighborhood::where('status', 'pending')->count();
+
         return response()->json(['count' => $count]);
     }
 
@@ -80,6 +79,7 @@ class NeighborhoodController extends Controller
     public function approve(Neighborhood $neighborhood): JsonResponse
     {
         $neighborhood->update(['status' => 'approved', 'verified' => true]);
+        Cache::forget("location.neighborhoods.{$neighborhood->commune_id}");
 
         // Fallback: set proposer's neighborhood_id if not already set
         if ($neighborhood->created_by) {
@@ -95,6 +95,7 @@ class NeighborhoodController extends Controller
     public function reject(Neighborhood $neighborhood): JsonResponse
     {
         $neighborhood->update(['status' => 'rejected', 'verified' => false]);
+        Cache::forget("location.neighborhoods.{$neighborhood->commune_id}");
 
         return response()->json(['message' => 'Quartier refusé.', 'neighborhood' => $neighborhood]);
     }

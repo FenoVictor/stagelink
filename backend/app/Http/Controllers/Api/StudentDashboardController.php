@@ -159,8 +159,14 @@ class StudentDashboardController extends Controller
         ];
         $tip = $tips[array_rand($tips)];
 
-        $profileViews = ActivityLog::where('action', 'profile_view')->count();
-        $cvViews = ActivityLog::where('action', 'cv_download')->count();
+        $profileViews = ActivityLog::where('action', 'profile_view')
+            ->where('subject_type', \App\Models\User::class)
+            ->where('subject_id', $user->id)
+            ->count();
+        $cvViews = ActivityLog::where('action', 'cv_download')
+            ->where('subject_type', \App\Models\User::class)
+            ->where('subject_id', $user->id)
+            ->count();
 
         return response()->json([
             'firstname' => $user->firstname,

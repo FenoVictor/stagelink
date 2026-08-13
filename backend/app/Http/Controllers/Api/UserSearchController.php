@@ -18,14 +18,14 @@ class UserSearchController extends Controller
         }
 
         $users = User::where('id', '!=', $request->user()->id)
+            ->whereIn('role', ['student', 'company'])
+            ->whereNull('banned_at')
             ->where(function ($query) use ($q) {
                 $query->where('firstname', 'like', "%{$q}%")
                       ->orWhere('lastname', 'like', "%{$q}%")
-                      ->orWhere('name', 'like', "%{$q}%")
-                      ->orWhere('email', 'like', "%{$q}%")
-                      ->orWhere('phone', 'like', "%{$q}%");
+                      ->orWhere('name', 'like', "%{$q}%");
             })
-            ->select('id', 'name', 'firstname', 'lastname', 'email', 'phone', 'role')
+            ->select('id', 'name', 'firstname', 'lastname', 'role')
             ->limit(10)
             ->get();
 

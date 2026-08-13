@@ -20,7 +20,7 @@ services:
       - key: LOG_LEVEL
         value: error
       - key: QUEUE_CONNECTION
-        value: sync
+        value: database
       - key: CACHE_STORE
         value: database
       - key: SESSION_DRIVER
@@ -68,4 +68,26 @@ services:
       - key: MAIL_FROM_NAME
         sync: false
       - key: FEEDBACK_EMAIL
+        sync: false
+      - key: FILESYSTEM_PUBLIC_DRIVER
+        value: local
+      - key: FILESYSTEM_PUBLIC_URL
+        sync: false
+      - key: AWS_ACCESS_KEY_ID
+        sync: false
+      - key: AWS_SECRET_ACCESS_KEY
+        sync: false
+      - key: AWS_DEFAULT_REGION
+        sync: false
+      - key: AWS_BUCKET
+        sync: false
+      - key: AWS_ENDPOINT
+        sync: false
+      - key: AWS_USE_PATH_STYLE_ENDPOINT
+        sync: false
+      - key: BACKUP_DISKS
+        value: local
+      - key: BACKUP_NOTIFY_EMAIL
+        sync: false
+      - key: SENTRY_LARAVEL_DSN
         sync: false

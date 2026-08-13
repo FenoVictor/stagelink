@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Api;
 
 use App\Events\NewNotification;
 use App\Http\Controllers\Controller;
+use App\Http\Requests\UpdateApplicationStatusRequest;
 use App\Mail\ApplicationStatusChanged;
 use App\Models\Application;
 use App\Models\Internship;
@@ -22,21 +23,21 @@ class CompanyApplicationController extends Controller
     {
         $this->authorize('manageApplications', $internship);
 
+        $perPage = min((int) $request->input('per_page', 50), 100);
+
         $applications = Application::with(['student.studentProfile'])
             ->where('internship_id', $internship->id)
             ->latest()
-            ->get();
+            ->paginate($perPage);
 
         return response()->json($applications);
     }
 
-    public function update(Request $request, Application $application): JsonResponse
+    public function update(UpdateApplicationStatusRequest $request, Application $application): JsonResponse
     {
         $this->authorize('update', $application);
 
-        $validated = $request->validate([
-            'status' => 'required|in:pending,accepted,rejected,interview',
-        ]);
+        $validated = $request->validated();
 
         DB::beginTransaction();
         try {
@@ -74,8 +75,8 @@ class CompanyApplicationController extends Controller
                 $notification = Notification::create([
                     'user_id' => $application->student_id,
                     'type' => 'application',
-                    'title' => 'Candidature ' . $statusLabel,
-                    'message' => 'Votre candidature pour "' . $application->internship->title . '" a été ' . $statusLabel . '.',
+                    'title' => 'Candidature '.$statusLabel,
+                    'message' => 'Votre candidature pour "'.$application->internship->title.'" a été '.$statusLabel.'.',
                 ]);
                 broadcast(new NewNotification($notification));
             } catch (\Throwable $e) {
@@ -99,6 +100,7 @@ class CompanyApplicationController extends Controller
                 'status' => $validated['status'] ?? null,
                 'error' => $e->getMessage(),
             ]);
+
             return response()->json(['message' => 'Erreur lors de la mise à jour.'], 500);
         }
     }
@@ -112,7 +114,7 @@ class CompanyApplicationController extends Controller
             ->latest()
             ->get();
 
-        $filename = 'candidatures_' . str_replace(' ', '_', $internship->title) . '.csv';
+        $filename = 'candidatures_'.str_replace(' ', '_', $internship->title).'.csv';
 
         $headers = [
             'Content-Type' => 'text/csv; charset=utf-8',
@@ -122,18 +124,22 @@ class CompanyApplicationController extends Controller
         $callback = function () use ($applications, $internship) {
             $handle = fopen('php://output', 'w');
             fwrite($handle, "\xEF\xBB\xBF"); // BOM UTF-8
-            fputcsv($handle, ['Candidatures pour : ' . $internship->title], ';');
+            fputcsv($handle, ['Candidatures pour : '.$internship->title], ';');
             fputcsv($handle, [], ';');
             fputcsv($handle, ['Étudiant', 'Email', 'Téléphone', 'Statut', 'Pertinence', 'Lettre de motivation', 'Date de candidature'], ';');
             foreach ($applications as $app) {
                 $student = $app->student;
                 $profile = $student->studentProfile;
                 fputcsv($handle, [
-                    ($student->firstname ?? '') . ' ' . ($student->lastname ?? ''),
+                    ($student->firstname ?? '').' '.($student->lastname ?? ''),
                     $student->email ?? '',
                     $student->phone ?? '',
-                    match ($app->status) { 'pending' => 'En attente', 'accepted' => 'Acceptée', 'rejected' => 'Refusée', 'interview' => 'Entretien', default => $app->status },
-                    match ($app->relevance) { 'high' => 'Élevée', 'medium' => 'Moyenne', 'low' => 'Faible', default => '' },
+                    match ($app->status) {
+                        'pending' => 'En attente', 'accepted' => 'Acceptée', 'rejected' => 'Refusée', 'interview' => 'Entretien', default => $app->status
+                    },
+                    match ($app->relevance) {
+                        'high' => 'Élevée', 'medium' => 'Moyenne', 'low' => 'Faible', default => ''
+                    },
                     strip_tags($app->cover_letter ?? ''),
                     $app->created_at?->format('d/m/Y H:i') ?? '',
                 ], ';');

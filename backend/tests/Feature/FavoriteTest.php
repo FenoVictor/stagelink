@@ -15,13 +15,14 @@ class FavoriteTest extends TestCase
 
     private function createStudent()
     {
-        return User::create(['name' => 'Student', 'email' => 'student@test.com', 'password' => bcrypt('password'), 'role' => 'student']);
+        return User::factory()->create(['name' => 'Student', 'email' => 'student@test.com', 'role' => 'student', 'email_verified_at' => null]);
     }
 
     private function createCompany()
     {
-        $user = User::create(['name' => 'Company', 'email' => 'company@test.com', 'password' => bcrypt('password'), 'role' => 'company']);
+        $user = User::factory()->create(['name' => 'Company', 'email' => 'company@test.com', 'role' => 'company', 'email_verified_at' => null]);
         $company = Company::create(['user_id' => $user->id, 'name' => 'TestCorp']);
+
         return [$user, $company];
     }
 
@@ -47,11 +48,11 @@ class FavoriteTest extends TestCase
         $internship = $this->createInternship($company);
         Favorite::create(['student_id' => $student->id, 'internship_id' => $internship->id]);
 
-        $response = $this->withHeader('Authorization', 'Bearer ' . $token)
+        $response = $this->withHeader('Authorization', 'Bearer '.$token)
             ->getJson('/api/favorites');
 
         $response->assertOk()
-            ->assertJsonCount(1);
+            ->assertJsonCount(1, 'data');
     }
 
     public function test_student_can_favorite_internship(): void
@@ -62,7 +63,7 @@ class FavoriteTest extends TestCase
 
         $internship = $this->createInternship($company);
 
-        $response = $this->withHeader('Authorization', 'Bearer ' . $token)
+        $response = $this->withHeader('Authorization', 'Bearer '.$token)
             ->postJson("/api/internships/{$internship->id}/favorite");
 
         $response->assertOk()
@@ -83,7 +84,7 @@ class FavoriteTest extends TestCase
         $internship = $this->createInternship($company);
         Favorite::create(['student_id' => $student->id, 'internship_id' => $internship->id]);
 
-        $response = $this->withHeader('Authorization', 'Bearer ' . $token)
+        $response = $this->withHeader('Authorization', 'Bearer '.$token)
             ->postJson("/api/internships/{$internship->id}/favorite");
 
         $response->assertOk()
@@ -109,7 +110,7 @@ class FavoriteTest extends TestCase
 
         $internship = $this->createInternship($company);
 
-        $response = $this->withHeader('Authorization', 'Bearer ' . $token)
+        $response = $this->withHeader('Authorization', 'Bearer '.$token)
             ->postJson("/api/internships/{$internship->id}/favorite");
 
         $response->assertStatus(403);

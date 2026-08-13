@@ -3,11 +3,13 @@
 namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
+use App\Http\Requests\ResetUserPasswordRequest;
+use App\Http\Requests\UpdateUserRequest;
+use App\Models\PasswordResetToken;
 use App\Models\User;
 use App\Services\AuditService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Log;
 
@@ -82,17 +84,9 @@ class AdminUserController extends Controller
         ]);
     }
 
-    public function update(Request $request, User $user): JsonResponse
+    public function update(UpdateUserRequest $request, User $user): JsonResponse
     {
-        $validated = $request->validate([
-            'role' => 'sometimes|in:student,company,admin',
-            'name' => 'sometimes|string|max:255',
-            'firstname' => 'sometimes|string|max:255',
-            'lastname' => 'sometimes|string|max:255',
-            'email' => 'sometimes|string|email|max:255|unique:users,email,' . $user->id,
-            'phone' => 'sometimes|nullable|string|max:20',
-            'status' => 'sometimes|in:active,banned,inactive',
-        ]);
+        $validated = $request->validated();
 
         $user->update($validated);
 
@@ -157,11 +151,9 @@ class AdminUserController extends Controller
         return response()->json(['message' => 'Utilisateur débanni.', 'user' => $user]);
     }
 
-    public function resetPassword(Request $request, User $user): JsonResponse
+    public function resetPassword(ResetUserPasswordRequest $request, User $user): JsonResponse
     {
-        $validated = $request->validate([
-            'password' => 'required|string|min:8|confirmed',
-        ]);
+        $validated = $request->validated();
 
         $user->update(['password' => Hash::make($validated['password'])]);
 
@@ -169,7 +161,7 @@ class AdminUserController extends Controller
 
         AuditService::log('admin_password_reset', "Réinitialisation du mot de passe de {$user->email}", $user);
 
-        DB::table('password_reset_tokens')->where('email', $user->email)->delete();
+        PasswordResetToken::where('email', $user->email)->delete();
 
         Log::info('Mot de passe réinitialisé par admin', [
             'admin_id' => $request->user()->id,
@@ -181,8 +173,7 @@ class AdminUserController extends Controller
 
     public function passwordResets(Request $request): JsonResponse
     {
-        $resets = DB::table('password_reset_tokens')
-            ->join('users', 'password_reset_tokens.email', '=', 'users.email')
+        $resets = PasswordResetToken::join('users', 'password_reset_tokens.email', '=', 'users.email')
             ->select('password_reset_tokens.*', 'users.id as user_id', 'users.name', 'users.firstname', 'users.lastname', 'users.role')
             ->orderBy('password_reset_tokens.created_at', 'desc')
             ->limit(50)
@@ -193,7 +184,7 @@ class AdminUserController extends Controller
                     'token' => $r->token,
                     'created_at' => $r->created_at,
                     'user_id' => $r->user_id,
-                    'name' => $r->firstname ? trim($r->firstname . ' ' . $r->lastname) : $r->name,
+                    'name' => $r->firstname ? trim($r->firstname.' '.$r->lastname) : $r->name,
                     'role' => $r->role,
                 ];
             });

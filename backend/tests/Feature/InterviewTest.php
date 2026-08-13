@@ -16,13 +16,14 @@ class InterviewTest extends TestCase
 
     private function createStudent()
     {
-        return User::create(['name' => 'Student', 'email' => 'student@test.com', 'password' => bcrypt('password'), 'role' => 'student']);
+        return User::factory()->create(['name' => 'Student', 'email' => 'student@test.com', 'role' => 'student', 'email_verified_at' => null]);
     }
 
     private function createCompany()
     {
-        $user = User::create(['name' => 'Company', 'email' => 'company@test.com', 'password' => bcrypt('password'), 'role' => 'company']);
+        $user = User::factory()->create(['name' => 'Company', 'email' => 'company@test.com', 'role' => 'company']);
         $company = Company::create(['user_id' => $user->id, 'name' => 'TestCorp']);
+
         return [$user, $company];
     }
 
@@ -48,7 +49,7 @@ class InterviewTest extends TestCase
             'status' => 'pending',
         ]);
 
-        $response = $this->withHeader('Authorization', 'Bearer ' . $token)
+        $response = $this->withHeader('Authorization', 'Bearer '.$token)
             ->postJson('/api/company/interviews', [
                 'application_id' => $application->id,
                 'date' => now()->addDays(7)->toDateTimeString(),
@@ -85,7 +86,7 @@ class InterviewTest extends TestCase
             'status' => 'pending',
         ]);
 
-        $response = $this->withHeader('Authorization', 'Bearer ' . $token)
+        $response = $this->withHeader('Authorization', 'Bearer '.$token)
             ->postJson('/api/company/interviews', [
                 'application_id' => $application->id,
                 'date' => now()->addDays(7)->toDateTimeString(),
@@ -122,7 +123,7 @@ class InterviewTest extends TestCase
             'status' => 'scheduled',
         ]);
 
-        $response = $this->withHeader('Authorization', 'Bearer ' . $token)
+        $response = $this->withHeader('Authorization', 'Bearer '.$token)
             ->putJson("/api/company/interviews/{$interview->id}", [
                 'status' => 'completed',
                 'notes' => 'Bon entretien',
@@ -160,7 +161,7 @@ class InterviewTest extends TestCase
             'status' => 'scheduled',
         ]);
 
-        $response = $this->withHeader('Authorization', 'Bearer ' . $token)
+        $response = $this->withHeader('Authorization', 'Bearer '.$token)
             ->getJson('/api/interviews');
 
         $response->assertOk();
@@ -188,7 +189,7 @@ class InterviewTest extends TestCase
             'status' => 'pending',
         ]);
 
-        $response = $this->withHeader('Authorization', 'Bearer ' . $token)
+        $response = $this->withHeader('Authorization', 'Bearer '.$token)
             ->postJson('/api/company/interviews', [
                 'application_id' => $application->id,
                 'date' => now()->subDays(1)->toDateTimeString(),

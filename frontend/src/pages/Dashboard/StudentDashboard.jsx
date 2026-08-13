@@ -56,15 +56,15 @@ export default function StudentDashboard({ user }) {
   };
 
   const matchColor = (score) => {
-    if (score >= 90) return "text-green-600";
-    if (score >= 70) return "text-amber-600";
-    return "text-orange-600";
+    if (score >= 90) return "text-green-700";
+    if (score >= 70) return "text-amber-700";
+    return "text-orange-700";
   };
 
   const matchBarColor = (score) => {
-    if (score >= 90) return "bg-green-500";
-    if (score >= 70) return "bg-amber-500";
-    return "bg-orange-500";
+    if (score >= 90) return "bg-green-600";
+    if (score >= 70) return "bg-amber-600";
+    return "bg-orange-600";
   };
 
   const remaining = missing_steps?.length || 0;
@@ -84,7 +84,7 @@ export default function StudentDashboard({ user }) {
         <div className="w-full bg-gray-200 rounded-full h-3 mb-4">
           <div
             className={`h-3 rounded-full transition-all duration-700 ${
-              completion < 40 ? "bg-danger" : completion < 70 ? "bg-amber-500" : "bg-cta"
+              completion < 40 ? "bg-danger" : completion < 70 ? "bg-amber-600" : "bg-cta"
             }`}
             style={{ width: `${completion}%` }}
           />
@@ -137,9 +137,9 @@ export default function StudentDashboard({ user }) {
             <p className="text-xs text-blue-600/70">Candidatures</p>
           </Link>
           <Link to="/student/favorites" className="p-4 rounded-xl bg-red-50 hover:bg-red-100 transition-colors">
-            <Heart size={20} className="text-red-500 mb-2" />
-            <p className="text-2xl font-bold text-red-600">{stats.favorites}</p>
-            <p className="text-xs text-red-600/70">Favoris</p>
+            <Heart size={20} className="text-red-700 mb-2" />
+            <p className="text-2xl font-bold text-red-700">{stats.favorites}</p>
+            <p className="text-xs text-red-700">Favoris</p>
           </Link>
           <Link to="/student/interviews" className="p-4 rounded-xl bg-purple-50 hover:bg-purple-100 transition-colors">
             <Calendar size={20} className="text-purple-600 mb-2" />
@@ -147,14 +147,14 @@ export default function StudentDashboard({ user }) {
             <p className="text-xs text-purple-600/70">Entretiens</p>
           </Link>
           <Link to="/student/internships" className="p-4 rounded-xl bg-amber-50 hover:bg-amber-100 transition-colors">
-            <Star size={20} className="text-amber-600 mb-2" />
+            <Star size={20} className="text-amber-700 mb-2" />
             <p className="text-2xl font-bold text-amber-700">{stats.recommendations_total}</p>
-            <p className="text-xs text-amber-600/70">Recommandations</p>
+            <p className="text-xs text-amber-700">Recommandations</p>
           </Link>
           <Link to="/student/my-internships" className="p-4 rounded-xl bg-green-50 hover:bg-green-100 transition-colors">
-            <Play size={20} className="text-green-600 mb-2" />
+            <Play size={20} className="text-green-700 mb-2" />
             <p className="text-2xl font-bold text-green-700">{stats.active_internships || 0}</p>
-            <p className="text-xs text-green-600/70">Stage{stats.active_internships > 1 ? "s" : ""} en cours</p>
+            <p className="text-xs text-green-700">Stage{stats.active_internships > 1 ? "s" : ""} en cours</p>
           </Link>
           <div className="p-4 rounded-xl bg-cyan-50 transition-colors">
             <Eye size={20} className="text-cyan-600 mb-2" />

@@ -14,10 +14,10 @@ class PublicStatsTest extends TestCase
 
     public function test_public_can_get_stats(): void
     {
-        $user = User::create(['name' => 'Student', 'email' => 'student@test.com', 'password' => bcrypt('password'), 'role' => 'student']);
+        $user = User::factory()->create(['name' => 'Student', 'email' => 'student@test.com', 'role' => 'student', 'email_verified_at' => null]);
         $user->studentProfile()->create(['bio' => 'Test', 'school' => 'Université', 'major' => 'Info', 'phone' => '+261341234567']);
 
-        $companyUser = User::create(['name' => 'Company', 'email' => 'company@test.com', 'password' => bcrypt('password'), 'role' => 'company']);
+        $companyUser = User::factory()->create(['name' => 'Company', 'email' => 'company@test.com', 'role' => 'company', 'email_verified_at' => null]);
         $company = Company::create(['user_id' => $companyUser->id, 'name' => 'TestCorp', 'status' => 'validated']);
 
         Internship::create([
@@ -38,7 +38,7 @@ class PublicStatsTest extends TestCase
 
     public function test_stats_count_published_internships(): void
     {
-        $companyUser = User::create(['name' => 'Company', 'email' => 'company@test.com', 'password' => bcrypt('password'), 'role' => 'company']);
+        $companyUser = User::factory()->create(['name' => 'Company', 'email' => 'company@test.com', 'role' => 'company', 'email_verified_at' => null]);
         $company = Company::create(['user_id' => $companyUser->id, 'name' => 'TestCorp']);
 
         Internship::create([

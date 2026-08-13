@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
+use App\Http\Requests\AdminUpdateInternshipRequest;
 use App\Models\Internship;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
@@ -37,13 +38,9 @@ class AdminInternshipController extends Controller
         return response()->json($internships);
     }
 
-    public function update(Request $request, Internship $internship): JsonResponse
+    public function update(AdminUpdateInternshipRequest $request, Internship $internship): JsonResponse
     {
-        $validated = $request->validate([
-            'status' => 'sometimes|in:draft,published,closed,expired',
-            'title' => 'sometimes|string|max:255',
-            'description' => 'sometimes|string',
-        ]);
+        $validated = $request->validated();
 
         $internship->update($validated);
 

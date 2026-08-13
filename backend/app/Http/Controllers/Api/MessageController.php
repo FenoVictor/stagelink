@@ -2,9 +2,10 @@
 
 namespace App\Http\Controllers\Api;
 
-use App\Http\Controllers\Controller;
 use App\Events\NewMessage;
 use App\Events\NewNotification;
+use App\Http\Controllers\Controller;
+use App\Http\Requests\StoreMessageRequest;
 use App\Models\Conversation;
 use App\Models\Message;
 use App\Models\Notification;
@@ -18,24 +19,23 @@ class MessageController extends Controller
     {
         $this->authorize('viewAny', [Message::class, $conversation]);
 
+        $perPage = min((int) $request->input('per_page', 200), 1000);
+
         $messages = $conversation->messages()
             ->with('sender')
             ->orderBy('created_at')
-            ->get();
+            ->paginate($perPage);
 
         return response()->json($messages);
     }
 
-    public function store(Request $request, Conversation $conversation): JsonResponse
+    public function store(StoreMessageRequest $request, Conversation $conversation): JsonResponse
     {
         $this->authorize('create', [Message::class, $conversation]);
 
-        $data = $request->validate([
-            'message' => 'nullable|string|max:5000',
-            'file' => 'nullable|file|mimes:pdf,doc,docx,jpg,jpeg,png|max:10240',
-        ]);
+        $data = $request->validated();
 
-        if (!$request->has('message') && !$request->hasFile('file')) {
+        if (! $request->has('message') && ! $request->hasFile('file')) {
             abort(422, 'Un message ou un fichier est requis.');
         }
 
@@ -65,9 +65,9 @@ class MessageController extends Controller
             try {
                 $notification = Notification::create([
                     'user_id' => $otherParticipantId,
-                    'type' => 'message:' . $conversation->id,
+                    'type' => 'message:'.$conversation->id,
                     'title' => 'Nouveau message',
-                    'message' => $request->user()->name . ' vous a envoyé un message.',
+                    'message' => $request->user()->name.' vous a envoyé un message.',
                 ]);
                 broadcast(new NewNotification($notification));
             } catch (\Throwable $e) {

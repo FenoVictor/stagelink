@@ -9,6 +9,15 @@ return new class extends Migration
 {
     public function up(): void
     {
+        $hasData = DB::table('messages')->exists();
+
+        if ($hasData && app()->environment('production')) {
+            throw new \RuntimeException(
+                'Refus de tronquer la table messages en production : cette migration est destructrice. ' .
+                'Vérifiez l\'état de la base avant de poursuivre (php artisan migrate --force après audit).'
+            );
+        }
+
         DB::table('messages')->truncate();
 
         try {

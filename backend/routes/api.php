@@ -42,7 +42,7 @@ Route::get('/health', function () {
 })->name('health');
 Route::post('/register', [AuthController::class, 'register'])->middleware('throttle:register');
 Route::post('/login', [AuthController::class, 'login'])->middleware('throttle:login');
-Route::post('/2fa/verify', [AuthController::class, 'verifyTwoFactor'])->middleware('auth:sanctum');
+Route::post('/2fa/verify', [AuthController::class, 'verifyTwoFactor'])->middleware(['auth:sanctum', 'banned', 'throttle:5,10']);
 Route::post('/forgot-password', [AuthController::class, 'forgotPassword'])->middleware('throttle:forgot-password');
 Route::post('/reset-password', [AuthController::class, 'resetPassword']);
 Route::get('/email/verify/{id}/{hash}', [EmailVerificationController::class, 'verify'])->name('verification.verify');
@@ -66,7 +66,7 @@ Route::get('/locations/communes/{commune}/neighborhoods', [LocationController::c
 Route::get('/locations/communes/{commune}/hierarchy', [LocationController::class, 'communeHierarchy']);
 
 // Authenticated routes
-Route::middleware('auth:sanctum')->group(function () {
+Route::middleware(['auth:sanctum', 'banned'])->group(function () {
     Route::get('/user', [AuthController::class, 'user']);
     Route::post('/logout', [AuthController::class, 'logout']);
     Route::post('/change-password', [AuthController::class, 'changePassword']);
@@ -93,7 +93,7 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::get('/favorites', [FavoriteController::class, 'index']);
     Route::post('/internships/{internship}/favorite', [FavoriteController::class, 'toggle']);
     Route::get('/conversations', [ConversationController::class, 'index']);
-    Route::post('/conversations', [ConversationController::class, 'store']);
+    Route::post('/conversations', [ConversationController::class, 'store'])->middleware('verified');
     Route::get('/conversations/{conversation}', [ConversationController::class, 'show']);
     Route::get('/conversations/{conversation}/messages', [MessageController::class, 'index']);
     Route::post('/conversations/{conversation}/messages', [MessageController::class, 'store']);
@@ -102,6 +102,7 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::put('/notifications/{notification}/read', [NotificationController::class, 'markAsRead']);
     Route::put('/notifications/read-all', [NotificationController::class, 'markAllRead']);
     Route::get('/students/{user}/profile', [StudentPublicController::class, 'show']);
+    Route::get('/students/{user}/cv', [StudentPublicController::class, 'cv']);
 
     // GDPR
     Route::get('/gdpr/data-info', [GdprController::class, 'dataInfo']);
@@ -113,11 +114,11 @@ Route::middleware('auth:sanctum')->group(function () {
         Route::get('/profile', [ProfileController::class, 'show']);
         Route::post('/profile', [ProfileController::class, 'update']);
         Route::get('/applications', [ApplicationController::class, 'index']);
-        Route::post('/internships/{internship}/apply', [ApplicationController::class, 'store']);
+        Route::post('/internships/{internship}/apply', [ApplicationController::class, 'store'])->middleware('verified');
         Route::get('/student/dashboard', StudentDashboardController::class);
         Route::get('/student/internships', [\App\Http\Controllers\Api\StudentInternshipController::class, 'index']);
-        Route::post('/student/internships/{internship}/start', [\App\Http\Controllers\Api\StudentInternshipController::class, 'start']);
-        Route::put('/student/internship-student/{internshipStudent}/complete', [\App\Http\Controllers\Api\StudentInternshipController::class, 'complete']);
+        Route::post('/student/internships/{internship}/start', [\App\Http\Controllers\Api\StudentInternshipController::class, 'start'])->middleware('verified');
+        Route::put('/student/internship-student/{internshipStudent}/complete', [\App\Http\Controllers\Api\StudentInternshipController::class, 'complete'])->middleware('verified');
         Route::get('/student/internship-student/{internshipStudent}/attestation', [\App\Http\Controllers\Api\StudentInternshipController::class, 'attestation']);
     });
 
@@ -125,11 +126,12 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::middleware('role:company')->prefix('company')->group(function () {
         Route::get('/profile', [CompanyProfileController::class, 'show']);
         Route::post('/profile', [CompanyProfileController::class, 'update']);
-        Route::apiResource('/internships', CompanyInternshipController::class);
+        Route::apiResource('/internships', CompanyInternshipController::class)->except(['store']);
+        Route::post('/internships', [CompanyInternshipController::class, 'store'])->middleware('verified');
         Route::get('/internships/{internship}/applications', [CompanyApplicationController::class, 'index']);
         Route::get('/internships/{internship}/applications/export', [CompanyApplicationController::class, 'export']);
-        Route::put('/applications/{application}', [CompanyApplicationController::class, 'update']);
-        Route::post('/interviews', [InterviewController::class, 'store']);
+        Route::put('/applications/{application}', [CompanyApplicationController::class, 'update'])->middleware('verified');
+        Route::post('/interviews', [InterviewController::class, 'store'])->middleware('verified');
         Route::put('/interviews/{interview}', [InterviewController::class, 'update']);
     });
 

@@ -37,7 +37,7 @@ export const internshipService = {
 
   async getMyInternships() {
     const { data } = await api.get("/company/internships");
-    return data;
+    return data?.data ?? data;
   },
 
   async apply(idInternship, formData) {
@@ -49,12 +49,12 @@ export const internshipService = {
 
   async getMyApplications() {
     const { data } = await api.get("/applications");
-    return data;
+    return data?.data ?? data;
   },
 
   async getInternshipApplications(idInternship) {
     const { data } = await api.get(`/company/internships/${idInternship}/applications`);
-    return data;
+    return data?.data ?? data;
   },
 
   async updateApplicationStatus(id, status) {

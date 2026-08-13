@@ -3,9 +3,12 @@
 namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
+use App\Http\Requests\ConfirmTwoFactorRequest;
+use App\Http\Requests\DisableTwoFactorRequest;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Crypt;
+use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Str;
 use PragmaRX\Google2FA\Google2FA;
 
@@ -55,13 +58,8 @@ class TwoFactorController extends Controller
         ]);
     }
 
-    public function confirm(Request $request): JsonResponse
-    {
-        $request->validate([
-            'code' => 'required|string|size:6',
-        ]);
-
-        $user = $request->user();
+    public function confirm(ConfirmTwoFactorRequest $request): JsonResponse
+    {        $user = $request->user();
 
         if (!$user->two_factor_secret) {
             return response()->json(['message' => 'Aucune configuration 2FA en cours.'], 422);
@@ -80,14 +78,8 @@ class TwoFactorController extends Controller
         return response()->json(['message' => '2FA activée.']);
     }
 
-    public function disable(Request $request): JsonResponse
-    {
-        $request->validate([
-            'code' => 'required|string|size:6',
-            'password' => 'required|string',
-        ]);
-
-        $user = $request->user();
+    public function disable(DisableTwoFactorRequest $request): JsonResponse
+    {        $user = $request->user();
 
         if (!Hash::check($request->input('password'), $user->password)) {
             return response()->json(['message' => 'Mot de passe incorrect.'], 422);

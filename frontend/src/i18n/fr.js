@@ -240,6 +240,7 @@ export default {
     neighborhoodName: "Nom du quartier",
     neighborhoodAdd: "Ajouter",
     address: "Adresse",
+    addressPlaceholder: "Votre adresse...",
     education: "Formation",
     school: "Établissement",
     diploma: "Diplôme",

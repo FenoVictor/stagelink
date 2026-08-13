@@ -2,7 +2,6 @@
 
 namespace Tests\Feature;
 
-use App\Models\Application;
 use App\Models\Company;
 use App\Models\Internship;
 use App\Models\Notification;
@@ -16,7 +15,8 @@ class NotificationTest extends TestCase
 
     private function createStudent()
     {
-        $user = User::create(['name' => 'Student', 'email' => 'notif@test.com', 'password' => bcrypt('password'), 'role' => 'student']);
+        $user = User::factory()->create(['name' => 'Student', 'email' => 'notif@test.com', 'role' => 'student']);
+
         return $user;
     }
 
@@ -32,7 +32,7 @@ class NotificationTest extends TestCase
             'message' => 'Test notification',
         ]);
 
-        $response = $this->withHeader('Authorization', 'Bearer ' . $token)
+        $response = $this->withHeader('Authorization', 'Bearer '.$token)
             ->getJson('/api/notifications');
 
         $response->assertOk();
@@ -51,7 +51,7 @@ class NotificationTest extends TestCase
             'message' => 'Test notification',
         ]);
 
-        $response = $this->withHeader('Authorization', 'Bearer ' . $token)
+        $response = $this->withHeader('Authorization', 'Bearer '.$token)
             ->putJson("/api/notifications/{$notif->id}/read");
 
         $response->assertOk();
@@ -66,7 +66,7 @@ class NotificationTest extends TestCase
         Notification::create(['user_id' => $user->id, 'type' => 'application', 'title' => 'N1', 'message' => 'msg1']);
         Notification::create(['user_id' => $user->id, 'type' => 'application', 'title' => 'N2', 'message' => 'msg2']);
 
-        $response = $this->withHeader('Authorization', 'Bearer ' . $token)
+        $response = $this->withHeader('Authorization', 'Bearer '.$token)
             ->putJson('/api/notifications/read-all');
 
         $response->assertOk();
@@ -76,7 +76,7 @@ class NotificationTest extends TestCase
     public function test_application_creates_notification_for_company(): void
     {
         $student = $this->createStudent();
-        $companyUser = User::create(['name' => 'Company', 'email' => 'comp@test.com', 'password' => bcrypt('password'), 'role' => 'company']);
+        $companyUser = User::factory()->create(['name' => 'Company', 'email' => 'comp@test.com', 'role' => 'company', 'email_verified_at' => null]);
         $company = Company::create(['user_id' => $companyUser->id, 'name' => 'TestCorp']);
         $internship = Internship::create([
             'company_id' => $company->id,
@@ -89,7 +89,7 @@ class NotificationTest extends TestCase
         ]);
 
         $token = $student->createToken('test')->plainTextToken;
-        $this->withHeader('Authorization', 'Bearer ' . $token)
+        $this->withHeader('Authorization', 'Bearer '.$token)
             ->postJson("/api/internships/{$internship->id}/apply", ['cover_letter' => 'Motivé']);
 
         $this->assertDatabaseHas('notifications', [

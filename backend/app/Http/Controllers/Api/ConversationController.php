@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Api;
 use App\Events\NewMessage;
 use App\Events\NewNotification;
 use App\Http\Controllers\Controller;
+use App\Http\Requests\StoreConversationRequest;
 use App\Models\Conversation;
 use App\Models\ConversationParticipant;
 use App\Models\Notification;
@@ -17,13 +18,15 @@ class ConversationController extends Controller
 {
     public function index(Request $request): JsonResponse
     {
+        $perPage = min((int) $request->input('per_page', 50), 100);
+
         $conversations = $request->user()->conversations()
             ->with(['lastMessage.sender', 'student:id,name', 'company:id,name', 'internship:id,title'])
             ->withCount(['messages as unread_count' => function ($q) use ($request) {
                 $q->whereNull('read_at')->where('sender_id', '!=', $request->user()->id);
             }])
             ->orderByDesc('updated_at')
-            ->get();
+            ->paginate($perPage);
 
         return response()->json($conversations);
     }
@@ -46,15 +49,9 @@ class ConversationController extends Controller
         return response()->json($conversation);
     }
 
-    public function store(Request $request): JsonResponse
+    public function store(StoreConversationRequest $request): JsonResponse
     {
-        $data = $request->validate([
-            'student_id' => 'nullable|exists:users,id',
-            'company_id' => 'nullable|exists:users,id',
-            'recipient_id' => 'nullable|exists:users,id',
-            'message' => 'required|string|max:5000',
-            'internship_id' => 'nullable|exists:internships,id',
-        ]);
+        $data = $request->validated();
 
         $authUser = $request->user();
 
@@ -85,7 +82,7 @@ class ConversationController extends Controller
             ]
         );
 
-        if (isset($data['internship_id']) && !$conversation->internship_id) {
+        if (isset($data['internship_id']) && ! $conversation->internship_id) {
             $conversation->update(['internship_id' => $data['internship_id']]);
         }
 
@@ -110,9 +107,9 @@ class ConversationController extends Controller
         try {
             $notification = Notification::create([
                 'user_id' => $otherParticipantId,
-                'type' => 'message:' . $conversation->id,
+                'type' => 'message:'.$conversation->id,
                 'title' => 'Nouveau message',
-                'message' => $authUser->name . ' vous a envoyé un message.',
+                'message' => $authUser->name.' vous a envoyé un message.',
             ]);
             broadcast(new NewNotification($notification));
         } catch (\Throwable $e) {

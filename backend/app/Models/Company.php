@@ -4,12 +4,20 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\SoftDeletes;
+use Illuminate\Support\Facades\Storage;
 
 class Company extends Model
 {
     use SoftDeletes;
 
     protected $fillable = ['user_id', 'name', 'description', 'logo', 'website', 'location', 'industry', 'verified_at', 'status', 'phone', 'city_id', 'address', 'employees_count'];
+
+    protected $appends = ['logo_url'];
+
+    public function getLogoUrlAttribute(): ?string
+    {
+        return $this->logo ? Storage::disk('public')->url($this->logo) : null;
+    }
 
     protected function casts(): array
     {

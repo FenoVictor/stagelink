@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
+use App\Http\Requests\CreateTokenRequest;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 
@@ -27,11 +28,9 @@ class TokenController extends Controller
         return response()->json($tokens);
     }
 
-    public function store(Request $request): JsonResponse
+    public function store(CreateTokenRequest $request): JsonResponse
     {
-        $validated = $request->validate([
-            'name' => 'nullable|string|max:100',
-        ]);
+        $validated = $request->validated();
 
         $name = $validated['name'] ?? 'api-token-' . strtolower($request->userAgent());
         $name = substr($name, 0, 100);

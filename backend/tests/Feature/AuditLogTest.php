@@ -13,7 +13,7 @@ class AuditLogTest extends TestCase
 
     private function createAdmin()
     {
-        return User::create(['name' => 'Admin', 'email' => 'admin@test.com', 'password' => bcrypt('password'), 'role' => 'admin']);
+        return User::factory()->create(['name' => 'Admin', 'email' => 'admin@test.com', 'role' => 'admin', 'email_verified_at' => null]);
     }
 
     public function test_admin_can_list_audit_logs(): void
@@ -30,7 +30,7 @@ class AuditLogTest extends TestCase
             'result' => 'success',
         ]);
 
-        $response = $this->withHeader('Authorization', 'Bearer ' . $token)
+        $response = $this->withHeader('Authorization', 'Bearer '.$token)
             ->getJson('/api/admin/audit-logs');
 
         $response->assertOk();
@@ -50,7 +50,7 @@ class AuditLogTest extends TestCase
             'result' => 'success',
         ]);
 
-        $response = $this->withHeader('Authorization', 'Bearer ' . $token)
+        $response = $this->withHeader('Authorization', 'Bearer '.$token)
             ->getJson('/api/admin/audit-logs/actions');
 
         $response->assertOk();
@@ -61,7 +61,7 @@ class AuditLogTest extends TestCase
         $admin = $this->createAdmin();
         $token = $admin->createToken('test')->plainTextToken;
 
-        $response = $this->withHeader('Authorization', 'Bearer ' . $token)
+        $response = $this->withHeader('Authorization', 'Bearer '.$token)
             ->getJson('/api/admin/audit-logs/export');
 
         $response->assertOk()
@@ -70,10 +70,10 @@ class AuditLogTest extends TestCase
 
     public function test_student_cannot_access_audit_logs(): void
     {
-        $student = User::create(['name' => 'Student', 'email' => 'student@test.com', 'password' => bcrypt('password'), 'role' => 'student']);
+        $student = User::factory()->create(['name' => 'Student', 'email' => 'student@test.com', 'role' => 'student', 'email_verified_at' => null]);
         $token = $student->createToken('test')->plainTextToken;
 
-        $response = $this->withHeader('Authorization', 'Bearer ' . $token)
+        $response = $this->withHeader('Authorization', 'Bearer '.$token)
             ->getJson('/api/admin/audit-logs');
 
         $response->assertStatus(403);
@@ -102,7 +102,7 @@ class AuditLogTest extends TestCase
             'result' => 'success',
         ]);
 
-        $response = $this->withHeader('Authorization', 'Bearer ' . $token)
+        $response = $this->withHeader('Authorization', 'Bearer '.$token)
             ->getJson('/api/admin/audit-logs?action=login');
 
         $response->assertOk();

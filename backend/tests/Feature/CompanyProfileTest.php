@@ -3,7 +3,6 @@
 namespace Tests\Feature;
 
 use App\Models\Company;
-use App\Models\Internship;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\TestCase;
@@ -14,8 +13,9 @@ class CompanyProfileTest extends TestCase
 
     private function createCompany()
     {
-        $user = User::create(['name' => 'Company', 'email' => 'company@test.com', 'password' => bcrypt('password'), 'role' => 'company']);
+        $user = User::factory()->create(['name' => 'Company', 'email' => 'company@test.com', 'role' => 'company', 'email_verified_at' => null]);
         Company::create(['user_id' => $user->id, 'name' => 'TestCorp']);
+
         return $user;
     }
 
@@ -24,7 +24,7 @@ class CompanyProfileTest extends TestCase
         $user = $this->createCompany();
         $token = $user->createToken('test')->plainTextToken;
 
-        $response = $this->withHeader('Authorization', 'Bearer ' . $token)
+        $response = $this->withHeader('Authorization', 'Bearer '.$token)
             ->getJson('/api/company/profile');
 
         $response->assertOk()
@@ -36,7 +36,7 @@ class CompanyProfileTest extends TestCase
         $user = $this->createCompany();
         $token = $user->createToken('test')->plainTextToken;
 
-        $response = $this->withHeader('Authorization', 'Bearer ' . $token)
+        $response = $this->withHeader('Authorization', 'Bearer '.$token)
             ->postJson('/api/company/profile', [
                 'name' => 'Updated Corp',
                 'description' => 'Nouvelle description',
@@ -49,10 +49,10 @@ class CompanyProfileTest extends TestCase
 
     public function test_student_cannot_access_company_profile(): void
     {
-        $student = User::create(['name' => 'Student', 'email' => 'student@test.com', 'password' => bcrypt('password'), 'role' => 'student']);
+        $student = User::factory()->create(['name' => 'Student', 'email' => 'student@test.com', 'role' => 'student', 'email_verified_at' => null]);
         $token = $student->createToken('test')->plainTextToken;
 
-        $response = $this->withHeader('Authorization', 'Bearer ' . $token)
+        $response = $this->withHeader('Authorization', 'Bearer '.$token)
             ->getJson('/api/company/profile');
 
         $response->assertStatus(403);
@@ -70,7 +70,7 @@ class CompanyProfileTest extends TestCase
         $user = $this->createCompany();
         $token = $user->createToken('test')->plainTextToken;
 
-        $response = $this->withHeader('Authorization', 'Bearer ' . $token)
+        $response = $this->withHeader('Authorization', 'Bearer '.$token)
             ->postJson('/api/company/profile', [
                 'website' => 'not-a-url',
             ]);

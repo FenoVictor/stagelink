@@ -53,8 +53,8 @@ export default function CompanyPublic() {
         <Card className="p-8">
           <div className="flex flex-col sm:flex-row items-start gap-6">
             <div className="w-24 h-24 rounded-xl bg-gray-100 overflow-hidden shrink-0">
-              {company.logo ? (
-                <img src={company.logo} alt={company.name} className="w-full h-full object-cover" />
+              {company.logo_url || company.logo ? (
+                <img src={company.logo_url || company.logo} alt={company.name} className="w-full h-full object-cover" />
               ) : (
                 <div className="w-full h-full flex items-center justify-center text-text-muted text-2xl font-bold">
                   {company.name?.charAt(0)}

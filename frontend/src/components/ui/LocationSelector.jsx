@@ -1,10 +1,13 @@
 import { useState, useEffect, useCallback } from "react";
+import { useTranslation } from "react-i18next";
 import { locationService } from "../../services/locationService";
+import { getErrorMessage } from "../../services/api";
 import Button from "./Button";
 import { Plus, Loader } from "lucide-react";
 import toast from "react-hot-toast";
 
 export default function LocationSelector({ communeId, neighborhoodId, onChange }) {
+  const { t } = useTranslation();
   const [countries, setCountries] = useState([]);
   const [provinces, setProvinces] = useState([]);
   const [regions, setRegions] = useState([]);
@@ -21,24 +24,31 @@ export default function LocationSelector({ communeId, neighborhoodId, onChange }
 
   const [proposing, setProposing] = useState(false);
   const [newNeighborhood, setNewNeighborhood] = useState("");
+  const [error, setError] = useState("");
+
+  const handleError = useCallback((err) => {
+    setError(getErrorMessage(err) || "Impossible de charger la localisation.");
+  }, []);
 
   useEffect(() => {
-    locationService.getCountries().then(setCountries).catch(() => {});
-  }, []);
+    setError("");
+    locationService.getCountries().then(setCountries).catch(handleError);
+  }, [handleError]);
 
   // Restore full hierarchy when communeId changes (profile loaded)
   useEffect(() => {
     if (!communeId) return;
+    setError("");
     locationService.getCommuneHierarchy(communeId).then((h) => {
       if (!h) return;
-      if (h.country) { setSelectedCountry(h.country.id); locationService.getProvinces(h.country.id).then(setProvinces).catch(() => {}); }
-      if (h.province) { setSelectedProvince(h.province.id); locationService.getRegions(h.province.id).then(setRegions).catch(() => {}); }
-      if (h.region) { setSelectedRegion(h.region.id); locationService.getDistricts(h.region.id).then(setDistricts).catch(() => {}); }
-      if (h.district) { setSelectedDistrict(h.district.id); locationService.getCommunes(h.district.id).then(setCommunes).catch(() => {}); }
+      if (h.country) { setSelectedCountry(h.country.id); locationService.getProvinces(h.country.id).then(setProvinces).catch(handleError); }
+      if (h.province) { setSelectedProvince(h.province.id); locationService.getRegions(h.province.id).then(setRegions).catch(handleError); }
+      if (h.region) { setSelectedRegion(h.region.id); locationService.getDistricts(h.region.id).then(setDistricts).catch(handleError); }
+      if (h.district) { setSelectedDistrict(h.district.id); locationService.getCommunes(h.district.id).then(setCommunes).catch(handleError); }
       setSelectedCommune(communeId);
-      locationService.getNeighborhoods(communeId).then(setNeighborhoods).catch(() => {});
-    }).catch(() => {});
-  }, [communeId]);
+      locationService.getNeighborhoods(communeId).then(setNeighborhoods).catch(handleError);
+    }).catch(handleError);
+  }, [communeId, handleError]);
 
   // Sync neighborhoodId prop
   useEffect(() => {
@@ -48,42 +58,47 @@ export default function LocationSelector({ communeId, neighborhoodId, onChange }
   const fetchProvinces = useCallback((countryId) => {
     setSelectedProvince(""); setSelectedRegion(""); setSelectedDistrict(""); setSelectedCommune(""); setSelectedNeighborhood("");
     setProvinces([]); setRegions([]); setDistricts([]); setCommunes([]); setNeighborhoods([]);
+    setError("");
     onChange({ commune_id: null, neighborhood_id: null });
     if (!countryId) return;
-    locationService.getProvinces(countryId).then(setProvinces).catch(() => {});
-  }, [onChange]);
+    locationService.getProvinces(countryId).then(setProvinces).catch(handleError);
+  }, [onChange, handleError]);
 
   const fetchRegions = useCallback((provinceId) => {
     setSelectedRegion(""); setSelectedDistrict(""); setSelectedCommune(""); setSelectedNeighborhood("");
     setRegions([]); setDistricts([]); setCommunes([]); setNeighborhoods([]);
+    setError("");
     onChange({ commune_id: null, neighborhood_id: null });
     if (!provinceId) return;
-    locationService.getRegions(provinceId).then(setRegions).catch(() => {});
-  }, [onChange]);
+    locationService.getRegions(provinceId).then(setRegions).catch(handleError);
+  }, [onChange, handleError]);
 
   const fetchDistricts = useCallback((regionId) => {
     setSelectedDistrict(""); setSelectedCommune(""); setSelectedNeighborhood("");
     setDistricts([]); setCommunes([]); setNeighborhoods([]);
+    setError("");
     onChange({ commune_id: null, neighborhood_id: null });
     if (!regionId) return;
-    locationService.getDistricts(regionId).then(setDistricts).catch(() => {});
-  }, [onChange]);
+    locationService.getDistricts(regionId).then(setDistricts).catch(handleError);
+  }, [onChange, handleError]);
 
   const fetchCommunes = useCallback((districtId) => {
     setSelectedCommune(""); setSelectedNeighborhood("");
     setCommunes([]); setNeighborhoods([]);
+    setError("");
     onChange({ commune_id: null, neighborhood_id: null });
     if (!districtId) return;
-    locationService.getCommunes(districtId).then(setCommunes).catch(() => {});
-  }, [onChange]);
+    locationService.getCommunes(districtId).then(setCommunes).catch(handleError);
+  }, [onChange, handleError]);
 
   const fetchNeighborhoods = useCallback((communeId) => {
     setSelectedNeighborhood("");
     setNeighborhoods([]);
+    setError("");
     onChange({ commune_id: communeId || null, neighborhood_id: null });
     if (!communeId) return;
-    locationService.getNeighborhoods(communeId).then(setNeighborhoods).catch(() => {});
-  }, [onChange]);
+    locationService.getNeighborhoods(communeId).then(setNeighborhoods).catch(handleError);
+  }, [onChange, handleError]);
 
   const handlePropose = async () => {
     if (!newNeighborhood.trim()) return;
@@ -110,21 +125,22 @@ export default function LocationSelector({ communeId, neighborhoodId, onChange }
 
   return (
     <div className="space-y-3">
-      <p className="text-sm font-medium text-text-muted">Vous êtes situé(e) à</p>
+      <p className="text-sm font-medium text-text-muted">{t("studentProfile.youAreAt")}</p>
+      {error && <p className="text-sm text-danger" role="alert">{error}</p>}
 
       <div>
-        <label className={labelClass}>Pays</label>
+        <label className={labelClass}>{t("studentProfile.country")}</label>
         <select className={selectClass} value={selectedCountry} onChange={(e) => { setSelectedCountry(e.target.value); fetchProvinces(e.target.value); }}>
-          <option value="">— Sélectionner —</option>
+          <option value="">— {t("studentProfile.levelSelect")} —</option>
           {countries.map((c) => <option key={c.id} value={c.id}>{c.name}</option>)}
         </select>
       </div>
 
       {selectedCountry && (
         <div>
-          <label className={labelClass}>Province</label>
+          <label className={labelClass}>{t("studentProfile.province")}</label>
           <select className={selectClass} value={selectedProvince} onChange={(e) => { setSelectedProvince(e.target.value); fetchRegions(e.target.value); }}>
-            <option value="">— Sélectionner —</option>
+            <option value="">— {t("studentProfile.levelSelect")} —</option>
             {provinces.map((p) => <option key={p.id} value={p.id}>{p.name}</option>)}
           </select>
         </div>
@@ -132,9 +148,9 @@ export default function LocationSelector({ communeId, neighborhoodId, onChange }
 
       {selectedProvince && (
         <div>
-          <label className={labelClass}>Région</label>
+          <label className={labelClass}>{t("studentProfile.region")}</label>
           <select className={selectClass} value={selectedRegion} onChange={(e) => { setSelectedRegion(e.target.value); fetchDistricts(e.target.value); }}>
-            <option value="">— Sélectionner —</option>
+            <option value="">— {t("studentProfile.levelSelect")} —</option>
             {regions.map((r) => <option key={r.id} value={r.id}>{r.name}</option>)}
           </select>
         </div>
@@ -142,9 +158,9 @@ export default function LocationSelector({ communeId, neighborhoodId, onChange }
 
       {selectedRegion && (
         <div>
-          <label className={labelClass}>District</label>
+          <label className={labelClass}>{t("studentProfile.district")}</label>
           <select className={selectClass} value={selectedDistrict} onChange={(e) => { setSelectedDistrict(e.target.value); fetchCommunes(e.target.value); }}>
-            <option value="">— Sélectionner —</option>
+            <option value="">— {t("studentProfile.levelSelect")} —</option>
             {districts.map((d) => <option key={d.id} value={d.id}>{d.name}</option>)}
           </select>
         </div>
@@ -152,9 +168,9 @@ export default function LocationSelector({ communeId, neighborhoodId, onChange }
 
       {selectedDistrict && (
         <div>
-          <label className={labelClass}>Commune</label>
+          <label className={labelClass}>{t("studentProfile.commune")}</label>
           <select className={selectClass} value={selectedCommune} onChange={(e) => { setSelectedCommune(e.target.value); fetchNeighborhoods(e.target.value); }}>
-            <option value="">— Sélectionner —</option>
+            <option value="">— {t("studentProfile.levelSelect")} —</option>
             {communes.map((c) => <option key={c.id} value={c.id}>{c.name}</option>)}
           </select>
         </div>
@@ -162,24 +178,24 @@ export default function LocationSelector({ communeId, neighborhoodId, onChange }
 
       {selectedCommune && (
         <div>
-          <label className={labelClass}>Quartier (optionnel)</label>
+          <label className={labelClass}>{t("studentProfile.neighborhood")}</label>
           <select className={selectClass} value={selectedNeighborhood} onChange={(e) => { setSelectedNeighborhood(e.target.value); onChange({ commune_id: selectedCommune, neighborhood_id: e.target.value || null }); }}>
-            <option value="">— Sélectionner —</option>
+            <option value="">— {t("studentProfile.levelSelect")} —</option>
             {neighborhoods.map((n) => <option key={n.id} value={n.id}>{n.name}</option>)}
           </select>
 
           <div className="mt-3 p-3 bg-amber-50 border border-amber-200 rounded-lg">
-            <p className="text-xs text-amber-700 font-medium mb-2">Votre quartier n'est pas dans la liste ?</p>
+            <p className="text-xs text-amber-700 font-medium mb-2">{t("studentProfile.neighborhoodPropose")}</p>
             <div className="flex gap-2">
               <input
                 type="text"
-                placeholder="Nom du quartier"
+                placeholder={t("studentProfile.neighborhoodName")}
                 value={newNeighborhood}
                 onChange={(e) => setNewNeighborhood(e.target.value)}
                 className="flex-1 px-3 py-1.5 text-sm border border-amber-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-amber-300 bg-white"
               />
               <Button size="sm" onClick={handlePropose} loading={proposing} disabled={!newNeighborhood.trim()}>
-                <Plus size={14} className="mr-1" /> Ajouter
+                <Plus size={14} className="mr-1" /> {t("studentProfile.neighborhoodAdd")}
               </Button>
             </div>
           </div>

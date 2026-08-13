@@ -3,7 +3,7 @@ import api from "./api";
 export const favoriteService = {
   async getAll() {
     const { data } = await api.get("/favorites");
-    return data;
+    return data?.data ?? data;
   },
 
   async toggle(internshipId) {

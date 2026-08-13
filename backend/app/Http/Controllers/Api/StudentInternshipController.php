@@ -4,6 +4,8 @@ namespace App\Http\Controllers\Api;
 
 use App\Events\NewNotification;
 use App\Http\Controllers\Controller;
+use App\Http\Requests\CompleteInternshipRequest;
+use App\Http\Requests\StartInternshipRequest;
 use App\Models\Application;
 use App\Models\Internship;
 use App\Models\InternshipStudent;
@@ -16,22 +18,24 @@ class StudentInternshipController extends Controller
 {
     public function index(Request $request): JsonResponse
     {
+        $perPage = min((int) $request->input('per_page', 50), 100);
+
         $internships = InternshipStudent::with(['internship.company'])
             ->where('student_id', $request->user()->id)
             ->latest()
-            ->get();
+            ->paginate($perPage);
 
         return response()->json($internships);
     }
 
-    public function start(Request $request, Internship $internship): JsonResponse
+    public function start(StartInternshipRequest $request, Internship $internship): JsonResponse
     {
         $application = Application::where('internship_id', $internship->id)
             ->where('student_id', $request->user()->id)
             ->where('status', 'accepted')
             ->first();
 
-        if (!$application) {
+        if (! $application) {
             return response()->json(['message' => 'Vous devez avoir une candidature acceptée pour démarrer ce stage.'], 403);
         }
 
@@ -44,9 +48,7 @@ class StudentInternshipController extends Controller
             return response()->json(['message' => 'Vous avez déjà un stage actif ou terminé pour cette offre.'], 409);
         }
 
-        $validated = $request->validate([
-            'start_date' => 'required|date',
-        ]);
+        $validated = $request->validated();
 
         $internshipStudent = InternshipStudent::create([
             'internship_id' => $internship->id,
@@ -59,7 +61,7 @@ class StudentInternshipController extends Controller
             'user_id' => $internship->company->user_id,
             'type' => 'internship',
             'title' => 'Stage démarré',
-            'message' => $request->user()->name . ' a démarré son stage "' . $internship->title . '".',
+            'message' => $request->user()->name.' a démarré son stage "'.$internship->title.'".',
         ]);
         broadcast(new NewNotification($notification));
 
@@ -68,7 +70,7 @@ class StudentInternshipController extends Controller
         return response()->json($internshipStudent, 201);
     }
 
-    public function complete(Request $request, InternshipStudent $internshipStudent): JsonResponse
+    public function complete(CompleteInternshipRequest $request, InternshipStudent $internshipStudent): JsonResponse
     {
         if ($internshipStudent->student_id !== $request->user()->id) {
             return response()->json(['message' => 'Non autorisé.'], 403);
@@ -78,10 +80,7 @@ class StudentInternshipController extends Controller
             return response()->json(['message' => 'Ce stage est déjà terminé.'], 409);
         }
 
-        $validated = $request->validate([
-            'end_date' => 'required|date|after_or_equal:' . $internshipStudent->start_date,
-            'feedback' => 'nullable|string',
-        ]);
+        $validated = $request->validated();
 
         $internshipStudent->update([
             'end_date' => $validated['end_date'],
@@ -112,7 +111,7 @@ class StudentInternshipController extends Controller
             'session' => $internshipStudent,
         ]);
 
-        $filename = 'attestation_' . $internshipStudent->internship->slug . '_' . $internshipStudent->student->id . '.pdf';
+        $filename = 'attestation_'.$internshipStudent->internship->slug.'_'.$internshipStudent->student->id.'.pdf';
 
         return $pdf->download($filename);
     }

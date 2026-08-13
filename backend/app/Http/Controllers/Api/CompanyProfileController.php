@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
+use App\Http\Requests\UpdateCompanyProfileRequest;
 use App\Models\City;
 use App\Models\Company;
 use Illuminate\Http\JsonResponse;
@@ -33,7 +34,7 @@ class CompanyProfileController extends Controller
         return response()->json($data);
     }
 
-    public function update(Request $request): JsonResponse
+    public function update(UpdateCompanyProfileRequest $request): JsonResponse
     {
         $user = $request->user();
         $company = $user->companyProfile;
@@ -47,24 +48,13 @@ class CompanyProfileController extends Controller
             Log::info('Company profile auto-created during update', ['user_id' => $user->id]);
         }
 
-        $validated = $request->validate([
-            'name' => 'sometimes|string|max:255',
-            'description' => 'nullable|string',
-            'website' => 'nullable|string|url',
-            'location' => 'nullable|string',
-            'industry' => 'nullable|string',
-            'phone' => 'nullable|string|max:20',
-            'city_id' => 'nullable|exists:cities,id',
-            'address' => 'nullable|string|max:1000',
-            'employees_count' => 'nullable|integer|min:0',
-        ]);
+        $validated = $request->validated();
 
         if ($request->has('verified_at') && $user->role === 'admin') {
             $validated['verified_at'] = now();
         }
 
         if ($request->hasFile('logo')) {
-            $request->validate(['logo' => 'file|image|mimes:jpeg,png,jpg,gif,webp|max:2048']);
             $validated['logo'] = $request->file('logo')->store('logos', 'public');
         }
 

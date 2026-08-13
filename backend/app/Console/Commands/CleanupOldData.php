@@ -3,14 +3,15 @@
 namespace App\Console\Commands;
 
 use App\Models\ActivityLog;
-use App\Models\Notification;
 use App\Models\Message;
+use App\Models\Notification;
+use App\Models\RequestMetric;
 use Illuminate\Console\Command;
-use Illuminate\Support\Facades\DB;
 
 class CleanupOldData extends Command
 {
     protected $signature = 'app:cleanup-data';
+
     protected $description = 'Nettoie les anciennes données selon la politique de rétention RGPD';
 
     public function handle(): int
@@ -34,6 +35,9 @@ class CleanupOldData extends Command
                 'browser' => null,
             ]);
         $this->info("Logs anonymisés (>3 ans) : {$oldLogs}");
+
+        $requestMetricsDeleted = RequestMetric::where('created_at', '<', now()->subDays(7))->delete();
+        $this->info("Request metrics purgées (>7 jours) : {$requestMetricsDeleted}");
 
         $this->info('=== Nettoyage terminé ===');
 

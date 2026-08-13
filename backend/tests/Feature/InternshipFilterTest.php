@@ -2,7 +2,6 @@
 
 namespace Tests\Feature;
 
-use App\Models\Category;
 use App\Models\Company;
 use App\Models\Internship;
 use App\Models\User;
@@ -15,8 +14,9 @@ class InternshipFilterTest extends TestCase
 
     private function createCompany()
     {
-        $user = User::create(['name' => 'Company', 'email' => 'company@test.com', 'password' => bcrypt('password'), 'role' => 'company']);
+        $user = User::factory()->create(['name' => 'Company', 'email' => 'company@test.com', 'role' => 'company', 'email_verified_at' => null]);
         $company = Company::create(['user_id' => $user->id, 'name' => 'TestCorp']);
+
         return $company;
     }
 

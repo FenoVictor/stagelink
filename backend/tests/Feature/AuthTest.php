@@ -2,8 +2,6 @@
 
 namespace Tests\Feature;
 
-use App\Models\Company;
-use App\Models\StudentProfile;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\TestCase;
@@ -60,7 +58,7 @@ class AuthTest extends TestCase
 
     public function test_register_rejects_duplicate_email(): void
     {
-        User::create(['name' => 'Test', 'email' => 'dup@example.com', 'password' => bcrypt('password'), 'role' => 'student']);
+        User::factory()->create(['name' => 'Test', 'email' => 'dup@example.com', 'role' => 'student', 'email_verified_at' => null]);
 
         $response = $this->postJson('/api/register', [
             'firstname' => 'Test',
@@ -77,7 +75,7 @@ class AuthTest extends TestCase
 
     public function test_user_can_login(): void
     {
-        User::create(['name' => 'Login Test', 'email' => 'login@test.com', 'password' => bcrypt('password123'), 'role' => 'student']);
+        User::factory()->create(['name' => 'Login Test', 'email' => 'login@test.com', 'password' => 'password123', 'role' => 'student', 'email_verified_at' => null]);
 
         $response = $this->postJson('/api/login', [
             'email' => 'login@test.com',
@@ -90,7 +88,7 @@ class AuthTest extends TestCase
 
     public function test_login_rejects_wrong_password(): void
     {
-        User::create(['name' => 'Test', 'email' => 'wrong@test.com', 'password' => bcrypt('password123'), 'role' => 'student']);
+        User::factory()->create(['name' => 'Test', 'email' => 'wrong@test.com', 'password' => 'password123', 'role' => 'student', 'email_verified_at' => null]);
 
         $response = $this->postJson('/api/login', [
             'email' => 'wrong@test.com',
@@ -102,10 +100,10 @@ class AuthTest extends TestCase
 
     public function test_user_can_logout(): void
     {
-        $user = User::create(['name' => 'Logout Test', 'email' => 'logout@test.com', 'password' => bcrypt('password123'), 'role' => 'student']);
+        $user = User::factory()->create(['name' => 'Logout Test', 'email' => 'logout@test.com', 'password' => 'password123', 'role' => 'student', 'email_verified_at' => null]);
         $token = $user->createToken('test')->plainTextToken;
 
-        $response = $this->withHeader('Authorization', 'Bearer ' . $token)
+        $response = $this->withHeader('Authorization', 'Bearer '.$token)
             ->postJson('/api/logout');
 
         $response->assertOk();
@@ -113,10 +111,10 @@ class AuthTest extends TestCase
 
     public function test_user_can_get_profile(): void
     {
-        $user = User::create(['name' => 'Profile Test', 'email' => 'profile@test.com', 'password' => bcrypt('password123'), 'role' => 'student']);
+        $user = User::factory()->create(['name' => 'Profile Test', 'email' => 'profile@test.com', 'password' => 'password123', 'role' => 'student', 'email_verified_at' => null]);
         $token = $user->createToken('test')->plainTextToken;
 
-        $response = $this->withHeader('Authorization', 'Bearer ' . $token)
+        $response = $this->withHeader('Authorization', 'Bearer '.$token)
             ->getJson('/api/user');
 
         $response->assertOk()

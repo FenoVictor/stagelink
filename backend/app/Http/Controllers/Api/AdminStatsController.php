@@ -9,9 +9,9 @@ use App\Models\Company;
 use App\Models\Conversation;
 use App\Models\Internship;
 use App\Models\Interview;
+use App\Models\PasswordResetToken;
 use App\Models\User;
 use Carbon\Carbon;
-use Illuminate\Support\Facades\DB;
 use Illuminate\Http\JsonResponse;
 
 class AdminStatsController extends Controller
@@ -65,7 +65,7 @@ class AdminStatsController extends Controller
             'categories' => Category::count(),
             'conversations' => Conversation::count(),
             'interviews' => Interview::count(),
-            'password_resets' => DB::table('password_reset_tokens')->count(),
+            'password_resets' => PasswordResetToken::count(),
             'monthly' => $months,
         ]);
     }

@@ -13,6 +13,7 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
         git \
         ca-certificates \
         unzip \
+        mariadb-client \
     && docker-php-ext-configure gd --with-freetype --with-jpeg \
     && docker-php-ext-install -j"$(nproc)" \
         bcmath \
@@ -46,4 +47,4 @@ RUN composer install --no-dev --optimize-autoloader \
 
 EXPOSE 8000
 
-CMD ["sh", "-c", "php artisan migrate --force --no-interaction && php artisan serve --host=0.0.0.0 --port=${PORT:-8000}"]
+CMD ["sh", "-c", "php artisan migrate --force --no-interaction && (php artisan schedule:work &) && (php artisan queue:work --sleep=5 --tries=3 --max-time=3500 &) && php artisan serve --host=0.0.0.0 --port=${PORT:-8000}"]

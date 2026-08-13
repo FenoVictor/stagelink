@@ -5,8 +5,6 @@ namespace Tests\Feature;
 use App\Models\Application;
 use App\Models\Company;
 use App\Models\Internship;
-use App\Models\Notification;
-use App\Models\Skill;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Http\UploadedFile;
@@ -18,13 +16,14 @@ class ApplicationTest extends TestCase
 
     private function createStudent()
     {
-        return User::create(['name' => 'Student', 'email' => 'student@test.com', 'password' => bcrypt('password'), 'role' => 'student']);
+        return User::factory()->create(['name' => 'Student', 'email' => 'student@test.com', 'role' => 'student']);
     }
 
     private function createCompany()
     {
-        $user = User::create(['name' => 'Company', 'email' => 'company@test.com', 'password' => bcrypt('password'), 'role' => 'company']);
+        $user = User::factory()->create(['name' => 'Company', 'email' => 'company@test.com', 'role' => 'company']);
         $company = Company::create(['user_id' => $user->id, 'name' => 'TestCorp']);
+
         return [$user, $company];
     }
 
@@ -54,11 +53,11 @@ class ApplicationTest extends TestCase
             'status' => 'pending',
         ]);
 
-        $response = $this->withHeader('Authorization', 'Bearer ' . $token)
+        $response = $this->withHeader('Authorization', 'Bearer '.$token)
             ->getJson('/api/applications');
 
         $response->assertOk()
-            ->assertJsonCount(1);
+            ->assertJsonCount(1, 'data');
     }
 
     public function test_student_can_apply_with_cover_letter(): void
@@ -69,7 +68,7 @@ class ApplicationTest extends TestCase
 
         $internship = $this->createInternship($company);
 
-        $response = $this->withHeader('Authorization', 'Bearer ' . $token)
+        $response = $this->withHeader('Authorization', 'Bearer '.$token)
             ->postJson("/api/internships/{$internship->id}/apply", [
                 'cover_letter' => 'Je suis très motivé.',
             ]);
@@ -91,7 +90,7 @@ class ApplicationTest extends TestCase
         $internship = $this->createInternship($company);
         $cv = UploadedFile::fake()->create('cv.pdf', 100, 'application/pdf');
 
-        $response = $this->withHeader('Authorization', 'Bearer ' . $token)
+        $response = $this->withHeader('Authorization', 'Bearer '.$token)
             ->postJson("/api/internships/{$internship->id}/apply", [
                 'cv' => $cv,
                 'cover_letter' => 'Avec CV',
@@ -111,7 +110,7 @@ class ApplicationTest extends TestCase
 
         $internship = $this->createInternship($company);
 
-        $response = $this->withHeader('Authorization', 'Bearer ' . $token)
+        $response = $this->withHeader('Authorization', 'Bearer '.$token)
             ->postJson("/api/internships/{$internship->id}/apply", [
                 'cover_letter' => 'Test',
             ]);
@@ -139,7 +138,7 @@ class ApplicationTest extends TestCase
 
         $internship = $this->createInternship($company);
 
-        $this->withHeader('Authorization', 'Bearer ' . $token)
+        $this->withHeader('Authorization', 'Bearer '.$token)
             ->postJson("/api/internships/{$internship->id}/apply", [
                 'cover_letter' => 'Motivé',
             ]);
@@ -158,10 +157,10 @@ class ApplicationTest extends TestCase
 
         $internship = $this->createInternship($company);
 
-        $this->withHeader('Authorization', 'Bearer ' . $token)
+        $this->withHeader('Authorization', 'Bearer '.$token)
             ->postJson("/api/internships/{$internship->id}/apply", ['cover_letter' => 'Première']);
 
-        $response = $this->withHeader('Authorization', 'Bearer ' . $token)
+        $response = $this->withHeader('Authorization', 'Bearer '.$token)
             ->postJson("/api/internships/{$internship->id}/apply", ['cover_letter' => 'Deuxième']);
 
         $response->assertStatus(409);
@@ -180,11 +179,11 @@ class ApplicationTest extends TestCase
             'status' => 'pending',
         ]);
 
-        $response = $this->withHeader('Authorization', 'Bearer ' . $token)
+        $response = $this->withHeader('Authorization', 'Bearer '.$token)
             ->getJson("/api/company/internships/{$internship->id}/applications");
 
         $response->assertOk()
-            ->assertJsonCount(1);
+            ->assertJsonCount(1, 'data');
     }
 
     public function test_company_can_update_application_status(): void
@@ -200,7 +199,7 @@ class ApplicationTest extends TestCase
             'status' => 'pending',
         ]);
 
-        $response = $this->withHeader('Authorization', 'Bearer ' . $token)
+        $response = $this->withHeader('Authorization', 'Bearer '.$token)
             ->putJson("/api/company/applications/{$application->id}", [
                 'status' => 'accepted',
             ]);
@@ -222,7 +221,7 @@ class ApplicationTest extends TestCase
             'status' => 'pending',
         ]);
 
-        $this->withHeader('Authorization', 'Bearer ' . $token)
+        $this->withHeader('Authorization', 'Bearer '.$token)
             ->putJson("/api/company/applications/{$application->id}", [
                 'status' => 'accepted',
             ]);
@@ -246,7 +245,7 @@ class ApplicationTest extends TestCase
             'status' => 'pending',
         ]);
 
-        $response = $this->withHeader('Authorization', 'Bearer ' . $token)
+        $response = $this->withHeader('Authorization', 'Bearer '.$token)
             ->putJson("/api/company/applications/{$application->id}", [
                 'status' => 'invalid_status',
             ]);

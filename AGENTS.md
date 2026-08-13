@@ -119,6 +119,16 @@
 - **Page admin** `/admin/feedback` : stats (total + par statut + note moyenne), filtres (recherche/statut/type), tableau paginé, modal détail avec changement de statut + note privée
 - **132 tests backend ✓, 69 tests frontend ✓, build 5.5s ✓**
 
+### Sprint 16 – Production fixes (déploiement)
+- **Fallback polling WebSocket** : `isWebSocketEnabled()` dans `broadcast.js` (vérifie `VITE_REVERB_HOST`) ; si absent, `NotificationBell`, `Messages` et `ChatModal` pollent toutes les 8s au lieu de dépendre d'Echo
+- **Uploads persistants (S3 configurable)** : disque `public` de `config/filesystems.php` piloté par `FILESYSTEM_PUBLIC_DRIVER` (local par défaut, `s3` possible avec AWS_*) ; toutes les URL (`cv_url`, `photo_url`, `logo_url`, `file_url`) passent par `Storage::disk('public')->url()` ; accès `logo_url`/`file_url` ajoutés (Company, Message, Application avec `$appends`) ; package `league/flysystem-aws-s3-v3` installé
+- **Backup Spatie** : `mariadb-client` ajouté au Dockerfile (mysqldump manquait), destination `BACKUP_DISKS` configurable (env, ex. `local` ou `s3`), `BACKUP_NOTIFY_EMAIL`
+- **Scheduler** : CMD Dockerfile lance `schedule:work` en arrière-plan après `migrate --force` et avant `php artisan serve` ; limitation : cron jobs Render non dispo sur plan free → scheduler ne tourne que quand l'instance est réveillée
+- **Sentry** : `SENTRY_LARAVEL_DSN` ajouté à `render.yaml` (sync:false) ; frontend déjà câblé via `VITE_SENTRY_DSN` (vide = désactivé)
+- **`backend/render.yaml` supprimé** : runtime PHP natif obsolète, conflit avec le `render.yaml` racine (Docker)
+- **`audit.bat` réécrit** : `call composer audit` (au lieu de `php composer`), `npm audit --audit-level=high`, tests sans `--parallel` (paratest absent), `if errorlevel 1` bloquant, sortie non supprimée (`2>nul` retiré)
+- **141 tests backend ✓, 71 tests frontend ✓, build ✓**
+
 ## Priorités restantes (sprints dédiés)
 
 | Priorité | Description |

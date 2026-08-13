@@ -15,7 +15,7 @@ class PublicEndpointTest extends TestCase
 
     public function test_public_internship_list(): void
     {
-        $companyUser = User::create(['name' => 'Company', 'email' => 'company@test.com', 'password' => bcrypt('password'), 'role' => 'company']);
+        $companyUser = User::factory()->create(['name' => 'Company', 'email' => 'company@test.com', 'role' => 'company', 'email_verified_at' => null]);
         $company = Company::create(['user_id' => $companyUser->id, 'name' => 'TestCorp']);
 
         Internship::create([
@@ -36,7 +36,7 @@ class PublicEndpointTest extends TestCase
 
     public function test_public_internship_detail_increments_views(): void
     {
-        $companyUser = User::create(['name' => 'Company', 'email' => 'company@test.com', 'password' => bcrypt('password'), 'role' => 'company']);
+        $companyUser = User::factory()->create(['name' => 'Company', 'email' => 'company@test.com', 'role' => 'company', 'email_verified_at' => null]);
         $company = Company::create(['user_id' => $companyUser->id, 'name' => 'TestCorp']);
 
         $internship = Internship::create([
@@ -58,7 +58,7 @@ class PublicEndpointTest extends TestCase
 
     public function test_public_company_page(): void
     {
-        $companyUser = User::create(['name' => 'Company', 'email' => 'company@test.com', 'password' => bcrypt('password'), 'role' => 'company']);
+        $companyUser = User::factory()->create(['name' => 'Company', 'email' => 'company@test.com', 'role' => 'company', 'email_verified_at' => null]);
         $company = Company::create(['user_id' => $companyUser->id, 'name' => 'TestCorp', 'status' => 'validated']);
 
         $response = $this->getJson("/api/companies/{$company->id}");
@@ -69,7 +69,7 @@ class PublicEndpointTest extends TestCase
 
     public function test_unvalidated_company_returns_404(): void
     {
-        $companyUser = User::create(['name' => 'Company', 'email' => 'company@test.com', 'password' => bcrypt('password'), 'role' => 'company']);
+        $companyUser = User::factory()->create(['name' => 'Company', 'email' => 'company@test.com', 'role' => 'company', 'email_verified_at' => null]);
         $company = Company::create(['user_id' => $companyUser->id, 'name' => 'TestCorp', 'status' => 'pending']);
 
         $response = $this->getJson("/api/companies/{$company->id}");

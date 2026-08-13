@@ -13,13 +13,14 @@ class AdminCompanyTest extends TestCase
 
     private function createAdmin()
     {
-        return User::create(['name' => 'Admin', 'email' => 'admin@test.com', 'password' => bcrypt('password'), 'role' => 'admin']);
+        return User::factory()->create(['name' => 'Admin', 'email' => 'admin@test.com', 'role' => 'admin', 'email_verified_at' => null]);
     }
 
     private function createCompany()
     {
-        $user = User::create(['name' => 'Company', 'email' => 'company@test.com', 'password' => bcrypt('password'), 'role' => 'company']);
+        $user = User::factory()->create(['name' => 'Company', 'email' => 'company@test.com', 'role' => 'company', 'email_verified_at' => null]);
         $company = Company::create(['user_id' => $user->id, 'name' => 'TestCorp']);
+
         return [$user, $company];
     }
 
@@ -28,7 +29,7 @@ class AdminCompanyTest extends TestCase
         $admin = $this->createAdmin();
         $token = $admin->createToken('test')->plainTextToken;
 
-        $response = $this->withHeader('Authorization', 'Bearer ' . $token)
+        $response = $this->withHeader('Authorization', 'Bearer '.$token)
             ->getJson('/api/admin/companies');
 
         $response->assertOk();
@@ -40,7 +41,7 @@ class AdminCompanyTest extends TestCase
         [$user, $company] = $this->createCompany();
         $token = $admin->createToken('test')->plainTextToken;
 
-        $response = $this->withHeader('Authorization', 'Bearer ' . $token)
+        $response = $this->withHeader('Authorization', 'Bearer '.$token)
             ->postJson("/api/admin/companies/{$company->id}/validate");
 
         $response->assertOk();
@@ -54,7 +55,7 @@ class AdminCompanyTest extends TestCase
         [$user, $company] = $this->createCompany();
         $token = $admin->createToken('test')->plainTextToken;
 
-        $response = $this->withHeader('Authorization', 'Bearer ' . $token)
+        $response = $this->withHeader('Authorization', 'Bearer '.$token)
             ->postJson("/api/admin/companies/{$company->id}/suspend");
 
         $response->assertOk();
@@ -68,7 +69,7 @@ class AdminCompanyTest extends TestCase
         $company->update(['status' => 'suspended']);
         $token = $admin->createToken('test')->plainTextToken;
 
-        $response = $this->withHeader('Authorization', 'Bearer ' . $token)
+        $response = $this->withHeader('Authorization', 'Bearer '.$token)
             ->postJson("/api/admin/companies/{$company->id}/reactivate");
 
         $response->assertOk();
@@ -81,7 +82,7 @@ class AdminCompanyTest extends TestCase
         [$user, $company] = $this->createCompany();
         $token = $admin->createToken('test')->plainTextToken;
 
-        $response = $this->withHeader('Authorization', 'Bearer ' . $token)
+        $response = $this->withHeader('Authorization', 'Bearer '.$token)
             ->deleteJson("/api/admin/companies/{$company->id}");
 
         $response->assertOk();
@@ -90,10 +91,10 @@ class AdminCompanyTest extends TestCase
 
     public function test_student_cannot_access_admin_companies(): void
     {
-        $student = User::create(['name' => 'Student', 'email' => 'student@test.com', 'password' => bcrypt('password'), 'role' => 'student']);
+        $student = User::factory()->create(['name' => 'Student', 'email' => 'student@test.com', 'role' => 'student', 'email_verified_at' => null]);
         $token = $student->createToken('test')->plainTextToken;
 
-        $response = $this->withHeader('Authorization', 'Bearer ' . $token)
+        $response = $this->withHeader('Authorization', 'Bearer '.$token)
             ->getJson('/api/admin/companies');
 
         $response->assertStatus(403);

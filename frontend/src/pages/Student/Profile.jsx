@@ -501,20 +501,20 @@ export default function StudentProfile() {
 
         {/* Localisation */}
         <Card>
-          <h2 className="font-semibold text-lg mb-4">Localisation</h2>
+          <h2 className="font-semibold text-lg mb-4">{t("studentProfile.location")}</h2>
           <LocationSelector
             communeId={profile.commune_id}
             neighborhoodId={profile.neighborhood_id}
             onChange={({ commune_id, neighborhood_id }) => setProfile((p) => ({ ...p, commune_id, neighborhood_id }))}
           />
           <div className="mt-4 space-y-1.5">
-            <label className="block text-sm font-medium">Adresse</label>
+            <label className="block text-sm font-medium">{t("studentProfile.address")}</label>
             <textarea
               name="address"
               className="w-full h-20 px-4 py-2.5 rounded-lg border border-border focus:outline-none focus:ring-2 focus:ring-primary/50 resize-none text-sm"
               value={profile.address || ""}
               onChange={handleChange}
-              placeholder="Votre adresse..."
+              placeholder={t("studentProfile.addressPlaceholder")}
             />
           </div>
         </Card>

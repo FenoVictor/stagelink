@@ -3,7 +3,7 @@ import api from "./api";
 export const interviewService = {
   async getAll() {
     const { data } = await api.get("/interviews");
-    return data;
+    return data?.data ?? data;
   },
 
   async create(formData) {

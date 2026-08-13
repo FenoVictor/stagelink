@@ -3,7 +3,7 @@ const variants = {
   secondary: "bg-secondary text-white hover:bg-primary",
   outline: "border-2 border-primary text-primary hover:bg-primary hover:text-white",
   ghost: "text-primary hover:bg-primary-bg dark:hover:bg-dark-hover",
-  danger: "bg-danger text-white hover:bg-red-600",
+  danger: "bg-danger text-white hover:bg-red-700",
   cta: "bg-cta text-white hover:bg-cta-hover",
 };
 

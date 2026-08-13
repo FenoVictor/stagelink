@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
+use App\Http\Requests\ConfirmAccountDeletionRequest;
 use App\Models\ActivityLog;
 use App\Models\Application;
 use App\Models\Conversation;
@@ -131,12 +132,8 @@ class GdprController extends Controller
         }, 200, $headers);
     }
 
-    public function deleteAccount(Request $request): JsonResponse
+    public function deleteAccount(ConfirmAccountDeletionRequest $request): JsonResponse
     {
-        $request->validate([
-            'password' => 'required|string',
-            'confirmation' => 'required|string|in:SUPPRIMER',
-        ]);
 
         $user = $request->user();
 

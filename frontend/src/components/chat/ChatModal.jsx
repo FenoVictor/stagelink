@@ -2,7 +2,7 @@ import { useState, useEffect, useRef } from "react";
 import { Send, X } from "lucide-react";
 import { conversationService } from "../../services/conversationService";
 import { getErrorMessage } from "../../services/api";
-import { getConversationChannel } from "../../services/broadcast";
+import { getConversationChannel, isWebSocketEnabled } from "../../services/broadcast";
 import Modal from "../ui/Modal";
 import toast from "react-hot-toast";
 
@@ -56,7 +56,21 @@ export default function ChatModal({ open, onClose, internship, companyId, compan
       });
     }
 
+    let pollId = null;
+    if (!isWebSocketEnabled()) {
+      pollId = setInterval(() => {
+        conversationService.getMessages(convId).then((page) => {
+          const msgs = page?.data || (Array.isArray(page) ? page : []);
+          setMessages((prev) => {
+            if (msgs.length === prev.length) return prev;
+            return msgs;
+          });
+        }).catch(() => {});
+      }, 8000);
+    }
+
     return () => {
+      if (pollId) clearInterval(pollId);
       if (echoChannelRef.current) {
         echoChannelRef.current.stopListening(".message.new");
         echoChannelRef.current = null;

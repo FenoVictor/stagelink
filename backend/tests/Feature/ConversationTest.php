@@ -5,7 +5,6 @@ namespace Tests\Feature;
 use App\Models\Company;
 use App\Models\Conversation;
 use App\Models\ConversationParticipant;
-use App\Models\Internship;
 use App\Models\Message;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
@@ -17,13 +16,14 @@ class ConversationTest extends TestCase
 
     private function createStudent()
     {
-        return User::create(['name' => 'Student', 'email' => 'student@test.com', 'password' => bcrypt('password'), 'role' => 'student']);
+        return User::factory()->create(['name' => 'Student', 'email' => 'student@test.com', 'role' => 'student']);
     }
 
     private function createCompany()
     {
-        $user = User::create(['name' => 'Company', 'email' => 'company@test.com', 'password' => bcrypt('password'), 'role' => 'company']);
+        $user = User::factory()->create(['name' => 'Company', 'email' => 'company@test.com', 'role' => 'company', 'email_verified_at' => null]);
         $company = Company::create(['user_id' => $user->id, 'name' => 'TestCorp']);
+
         return [$user, $company];
     }
 
@@ -51,7 +51,7 @@ class ConversationTest extends TestCase
             'company_id' => $companyUser->id,
         ]);
 
-        $response = $this->withHeader('Authorization', 'Bearer ' . $token)
+        $response = $this->withHeader('Authorization', 'Bearer '.$token)
             ->getJson('/api/conversations');
 
         $response->assertOk();
@@ -63,7 +63,7 @@ class ConversationTest extends TestCase
         [$companyUser, $company] = $this->createCompany();
         $token = $student->createToken('test')->plainTextToken;
 
-        $response = $this->withHeader('Authorization', 'Bearer ' . $token)
+        $response = $this->withHeader('Authorization', 'Bearer '.$token)
             ->postJson('/api/conversations', [
                 'recipient_id' => $companyUser->id,
                 'message' => 'Bonjour, je suis intéressé par votre offre.',
@@ -88,7 +88,7 @@ class ConversationTest extends TestCase
 
         $conversation = $this->createConversationWithParticipants($student, $companyUser);
 
-        $response = $this->withHeader('Authorization', 'Bearer ' . $token)
+        $response = $this->withHeader('Authorization', 'Bearer '.$token)
             ->getJson("/api/conversations/{$conversation->id}");
 
         $response->assertOk();
@@ -97,13 +97,13 @@ class ConversationTest extends TestCase
     public function test_cannot_view_others_conversation(): void
     {
         $student = $this->createStudent();
-        $otherStudent = User::create(['name' => 'Other', 'email' => 'other@test.com', 'password' => bcrypt('password'), 'role' => 'student']);
+        $otherStudent = User::factory()->create(['name' => 'Other', 'email' => 'other@test.com', 'role' => 'student', 'email_verified_at' => null]);
         [$companyUser, $company] = $this->createCompany();
         $token = $otherStudent->createToken('test')->plainTextToken;
 
         $conversation = $this->createConversationWithParticipants($student, $companyUser);
 
-        $response = $this->withHeader('Authorization', 'Bearer ' . $token)
+        $response = $this->withHeader('Authorization', 'Bearer '.$token)
             ->getJson("/api/conversations/{$conversation->id}");
 
         $response->assertStatus(403);
@@ -117,7 +117,7 @@ class ConversationTest extends TestCase
 
         $conversation = $this->createConversationWithParticipants($student, $companyUser);
 
-        $response = $this->withHeader('Authorization', 'Bearer ' . $token)
+        $response = $this->withHeader('Authorization', 'Bearer '.$token)
             ->postJson("/api/conversations/{$conversation->id}/messages", [
                 'message' => 'Merci pour votre réponse.',
             ]);
@@ -144,11 +144,11 @@ class ConversationTest extends TestCase
             'message' => 'Hello',
         ]);
 
-        $response = $this->withHeader('Authorization', 'Bearer ' . $token)
+        $response = $this->withHeader('Authorization', 'Bearer '.$token)
             ->getJson("/api/conversations/{$conversation->id}/messages");
 
         $response->assertOk()
-            ->assertJsonCount(1);
+            ->assertJsonCount(1, 'data');
     }
 
     public function test_empty_message_returns_422(): void
@@ -159,7 +159,7 @@ class ConversationTest extends TestCase
 
         $conversation = $this->createConversationWithParticipants($student, $companyUser);
 
-        $response = $this->withHeader('Authorization', 'Bearer ' . $token)
+        $response = $this->withHeader('Authorization', 'Bearer '.$token)
             ->postJson("/api/conversations/{$conversation->id}/messages", []);
 
         $response->assertStatus(422);

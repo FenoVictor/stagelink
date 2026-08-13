@@ -3,7 +3,6 @@
 namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
-use App\Models\Favorite;
 use App\Models\Internship;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
@@ -12,10 +11,12 @@ class FavoriteController extends Controller
 {
     public function index(Request $request): JsonResponse
     {
+        $perPage = min((int) $request->input('per_page', 20), 50);
+
         $favorites = $request->user()->favorites()
             ->with('internship.company', 'internship.city')
             ->latest()
-            ->get();
+            ->paginate($perPage);
 
         return response()->json($favorites);
     }
@@ -32,6 +33,7 @@ class FavoriteController extends Controller
 
         if ($favorite) {
             $favorite->delete();
+
             return response()->json(['favorited' => false]);
         }
 
@@ -39,6 +41,7 @@ class FavoriteController extends Controller
             'internship_id' => $internship->id,
             'student_id' => $user->id,
         ]);
+
         return response()->json(['favorited' => true]);
     }
 }

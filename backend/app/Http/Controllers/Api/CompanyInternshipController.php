@@ -3,6 +3,8 @@
 namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
+use App\Http\Requests\StoreCompanyInternshipRequest;
+use App\Http\Requests\UpdateCompanyInternshipRequest;
 use App\Models\Internship;
 use App\Services\AuditService;
 use Illuminate\Http\JsonResponse;
@@ -14,21 +16,25 @@ class CompanyInternshipController extends Controller
     {
         $company = $request->user()->companyProfile;
 
-        if (!$company) {
+        if (! $company) {
             return response()->json(['message' => 'Company profile not found.'], 404);
         }
+
+        $perPage = min((int) $request->input('per_page', 50), 100);
 
         $internships = Internship::with('categories')
             ->withCount('applications')
             ->where('company_id', $company->id)
             ->latest()
-            ->get();
+            ->paginate($perPage);
 
-        $internships->loadCount(['applications as high_count' => fn($q) => $q->where('relevance', 'high')]);
-        $internships->loadCount(['applications as medium_count' => fn($q) => $q->where('relevance', 'medium')]);
-        $internships->loadCount(['applications as low_count' => fn($q) => $q->where('relevance', 'low')]);
+        $internships->getCollection()->loadCount([
+            'applications as high_count' => fn ($q) => $q->where('relevance', 'high'),
+            'applications as medium_count' => fn ($q) => $q->where('relevance', 'medium'),
+            'applications as low_count' => fn ($q) => $q->where('relevance', 'low'),
+        ]);
 
-        $internships->each(function ($internship) {
+        $internships->getCollection()->each(function ($internship) {
             $internship->application_stats = [
                 'total' => $internship->applications_count,
                 'high' => $internship->high_count,
@@ -41,37 +47,21 @@ class CompanyInternshipController extends Controller
         return response()->json($internships);
     }
 
-    public function store(Request $request): JsonResponse
+    public function store(StoreCompanyInternshipRequest $request): JsonResponse
     {
         $company = $request->user()->companyProfile;
 
-        if (!$company) {
+        if (! $company) {
             return response()->json(['message' => 'Company profile not found.'], 404);
         }
 
-        $validated = $request->validate([
-            'title' => 'required|string|max:255',
-            'description' => 'required|string',
-            'requirements' => 'nullable|string',
-            'location' => 'nullable|string',
-            'type' => 'nullable|in:remote,onsite,hybrid',
-            'duration' => 'nullable|string',
-            'study_level' => 'nullable|string|max:100',
-            'salary' => 'nullable|numeric|min:0',
-            'slots' => 'nullable|integer|min:1',
-            'deadline' => 'nullable|date',
-            'status' => 'nullable|in:draft,published,closed,expired',
-            'categories' => 'nullable|array',
-            'categories.*' => 'exists:categories,id',
-        ]);
+        $validated = $request->validated();
 
         $validated['company_id'] = $company->id;
 
         $internship = Internship::create($validated);
 
-        if ($request->has('categories')) {
-            $internship->categories()->sync($request->categories);
-        }
+        $this->syncCategories($internship, $request->input('category_id'), $request->input('categories', []));
 
         AuditService::log('internship_create', "Offre créée : {$internship->title}", $internship);
 
@@ -89,30 +79,16 @@ class CompanyInternshipController extends Controller
         return response()->json($internship);
     }
 
-    public function update(Request $request, Internship $internship): JsonResponse
+    public function update(UpdateCompanyInternshipRequest $request, Internship $internship): JsonResponse
     {
         $this->authorize('update', $internship);
 
-        $validated = $request->validate([
-            'title' => 'sometimes|string|max:255',
-            'description' => 'sometimes|string',
-            'requirements' => 'nullable|string',
-            'location' => 'nullable|string',
-            'type' => 'nullable|in:remote,onsite,hybrid',
-            'duration' => 'nullable|string',
-            'study_level' => 'nullable|string|max:100',
-            'salary' => 'nullable|numeric|min:0',
-            'slots' => 'nullable|integer|min:1',
-            'deadline' => 'nullable|date',
-            'status' => 'nullable|in:draft,published,closed,expired',
-            'categories' => 'nullable|array',
-            'categories.*' => 'exists:categories,id',
-        ]);
+        $validated = $request->validated();
 
         $internship->update($validated);
 
-        if ($request->has('categories')) {
-            $internship->categories()->sync($request->categories);
+        if ($request->has('category_id') || $request->has('categories')) {
+            $this->syncCategories($internship, $request->input('category_id'), $request->input('categories', []));
         }
 
         AuditService::log('internship_update', "Offre mise à jour : {$internship->title}", $internship, null, 'success', [
@@ -133,5 +109,22 @@ class CompanyInternshipController extends Controller
         $internship->delete();
 
         return response()->json(['message' => 'Internship deleted successfully.']);
+    }
+
+    private function syncCategories(Internship $internship, $categoryId, array $categoryIds): void
+    {
+        $categoryIds = array_values(array_filter(array_map('intval', $categoryIds)));
+
+        if ($categoryId) {
+            $categoryIds[] = (int) $categoryId;
+        }
+
+        $categoryIds = array_values(array_unique($categoryIds));
+
+        $internship->categories()->sync($categoryIds);
+
+        if ($categoryIds) {
+            $internship->forceFill(['category_id' => $categoryIds[0]])->save();
+        }
     }
 }

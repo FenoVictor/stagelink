@@ -128,8 +128,8 @@ export default function Companies() {
             {companies.map((company) => (
             <Card key={company.id}>
               <div className="flex items-start gap-4">
-                {company.logo ? (
-                  <img src={company.logo} alt={company.name} className="w-14 h-14 rounded-lg object-cover flex-shrink-0" />
+                {(company.logo_url || company.logo) ? (
+                  <img src={company.logo_url || company.logo} alt={company.name} className="w-14 h-14 rounded-lg object-cover flex-shrink-0" />
                 ) : (
                   <div className="w-14 h-14 rounded-lg bg-primary-bg flex items-center justify-center flex-shrink-0">
                     <Building2 size={24} className="text-primary" />
@@ -190,8 +190,8 @@ export default function Companies() {
         {details && (
           <div className="space-y-6">
             <div className="flex items-start gap-4">
-              {details.logo ? (
-                <img src={details.logo} alt={details.name} className="w-16 h-16 rounded-lg object-cover" />
+              {(details.logo_url || details.logo) ? (
+                <img src={details.logo_url || details.logo} alt={details.name} className="w-16 h-16 rounded-lg object-cover" />
               ) : (
                 <div className="w-16 h-16 rounded-lg bg-primary-bg flex items-center justify-center">
                   <Building2 size={28} className="text-primary" />

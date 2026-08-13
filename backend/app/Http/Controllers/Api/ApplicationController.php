@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Api;
 
 use App\Events\NewNotification;
 use App\Http\Controllers\Controller;
+use App\Http\Requests\StoreApplicationRequest;
 use App\Mail\ApplicationConfirmation;
 use App\Mail\NewApplication;
 use App\Models\Application;
@@ -19,23 +20,18 @@ class ApplicationController extends Controller
 {
     public function index(Request $request): JsonResponse
     {
+        $perPage = min((int) $request->input('per_page', 15), 50);
+
         $applications = Application::with(['internship.company'])
             ->where('student_id', $request->user()->id)
             ->latest()
-            ->get();
+            ->paginate($perPage);
 
         return response()->json($applications);
     }
 
-    public function store(Request $request, Internship $internship): JsonResponse
+    public function store(StoreApplicationRequest $request, Internship $internship): JsonResponse
     {
-        $request->validate([
-            'cover_letter' => 'nullable|string',
-            'cover_letter_file' => 'nullable|file|mimes:pdf,doc,docx|max:2048',
-            'cv' => 'nullable|file|mimes:pdf,doc,docx|max:2048',
-            'status' => 'nullable|in:pending,accepted,rejected,interview',
-        ]);
-
         $existing = Application::where('internship_id', $internship->id)
             ->where('student_id', $request->user()->id)
             ->first();
@@ -50,6 +46,7 @@ class ApplicationController extends Controller
                 'internship_id' => $internship->id,
                 'student_id' => $request->user()->id,
                 'cover_letter' => $request->cover_letter,
+                'status' => 'pending',
             ];
 
             if ($request->hasFile('cv')) {
@@ -93,7 +90,7 @@ class ApplicationController extends Controller
                     'user_id' => $internship->company->user_id,
                     'type' => 'application',
                     'title' => 'Nouvelle candidature',
-                    'message' => $application->student->name . ' a postulé à "' . $internship->title . '".',
+                    'message' => $application->student->name.' a postulé à "'.$internship->title.'".',
                 ]);
                 broadcast(new NewNotification($notification));
             } catch (\Throwable $e) {
@@ -117,6 +114,7 @@ class ApplicationController extends Controller
                 'student_id' => $request->user()->id,
                 'error' => $e->getMessage(),
             ]);
+
             return response()->json(['message' => 'Erreur lors de la candidature.'], 500);
         }
     }
@@ -127,9 +125,9 @@ class ApplicationController extends Controller
         $profile = $student->studentProfile;
 
         $score = 0;
-        $haystack = mb_strtolower($internship->title . ' ' . ($internship->description ?? '') . ' ' . ($internship->requirements ?? ''));
+        $haystack = mb_strtolower($internship->title.' '.($internship->description ?? '').' '.($internship->requirements ?? ''));
         if ($internship->category) {
-            $haystack .= ' ' . mb_strtolower($internship->category->name);
+            $haystack .= ' '.mb_strtolower($internship->category->name);
         }
 
         // Skills match (up to +40)
@@ -153,8 +151,13 @@ class ApplicationController extends Controller
             $score += 10;
         }
 
-        if ($score >= 40) return 'high';
-        if ($score >= 20) return 'medium';
+        if ($score >= 40) {
+            return 'high';
+        }
+        if ($score >= 20) {
+            return 'medium';
+        }
+
         return 'low';
     }
 }

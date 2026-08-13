@@ -3,53 +3,49 @@
 namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
+use App\Http\Requests\ChangePasswordRequest;
+use App\Http\Requests\ForgotPasswordRequest;
+use App\Http\Requests\LoginRequest;
+use App\Http\Requests\RegisterRequest;
+use App\Http\Requests\ResetPasswordRequest;
+use App\Http\Requests\VerifyTwoFactorLoginRequest;
+use App\Mail\ForgotPassword;
+use App\Mail\Welcome;
 use App\Models\Company;
+use App\Models\PasswordResetToken;
 use App\Models\StudentProfile;
 use App\Models\User;
 use App\Notifications\VerifyEmailNotification;
+use App\Services\AuditService;
+use App\Services\LoginLogService;
 use Carbon\Carbon;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Crypt;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Log;
-use App\Mail\ForgotPassword;
-use App\Mail\Welcome;
-use App\Services\AuditService;
-use App\Services\LoginLogService;
-use Illuminate\Support\Facades\Crypt;
 use Illuminate\Support\Facades\Mail;
+use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
 use Illuminate\Validation\ValidationException;
 use PragmaRX\Google2FA\Google2FA;
 
 class AuthController extends Controller
 {
-    public function register(Request $request): JsonResponse
+    public function register(RegisterRequest $request): JsonResponse
     {
-        $validated = $request->validate([
-            'firstname' => 'required|string|max:100',
-            'lastname' => 'required|string|max:100',
-            'email' => 'required|string|email|max:255|unique:users',
-            'password' => 'required|string|min:8|confirmed',
-            'role' => 'required|in:student,company',
-        ]);
+        $validated = $request->validated();
 
         $companyData = null;
         if ($validated['role'] === 'company') {
-            $companyData = $request->validate([
-                'company_name' => 'nullable|string|max:255',
-                'description' => 'nullable|string',
-                'website' => 'nullable|string|url',
-                'location' => 'nullable|string',
-                'industry' => 'nullable|string',
-            ]);
+            $companyData = $validated;
         }
 
         DB::beginTransaction();
         try {
             $validated['password'] = Hash::make($validated['password']);
-            $validated['name'] = trim($validated['firstname'] . ' ' . $validated['lastname']);
+            $validated['name'] = trim($validated['firstname'].' '.$validated['lastname']);
             $user = User::create($validated);
 
             if ($user->role === 'company') {
@@ -79,7 +75,7 @@ class AuthController extends Controller
             }
 
             try {
-                $user->notify(new VerifyEmailNotification());
+                $user->notify(new VerifyEmailNotification);
             } catch (\Throwable $e) {
                 Log::error('Verification email failed', [
                     'user_id' => $user->id,
@@ -103,20 +99,16 @@ class AuthController extends Controller
         } catch (\Throwable $e) {
             DB::rollBack();
             Log::error('Registration failed', ['error' => $e->getMessage(), 'email' => $validated['email'] ?? null]);
+
             return response()->json(['message' => 'Erreur lors de l\'inscription.'], 500);
         }
     }
 
-    public function login(Request $request): JsonResponse
+    public function login(LoginRequest $request): JsonResponse
     {
-        $request->validate([
-            'email' => 'required|string|email',
-            'password' => 'required|string',
-        ]);
-
         $user = User::where('email', $request->email)->first();
 
-        if (!$user || !Hash::check($request->password, $user->password)) {
+        if (! $user || ! Hash::check($request->password, $user->password)) {
             LoginLogService::log($user, $request->input('email'), false, 'Identifiants incorrects');
             AuditService::log('login_failed', 'Tentative de connexion échouée', $user, null, 'failed', [
                 'email' => $request->email,
@@ -125,6 +117,17 @@ class AuthController extends Controller
             throw ValidationException::withMessages([
                 'email' => __('auth.failed'),
             ]);
+        }
+
+        if ($user->isBanned()) {
+            LoginLogService::log($user, $request->input('email'), false, 'Compte banni');
+            AuditService::log('login_failed', 'Tentative de connexion sur compte banni', $user, null, 'failed', [
+                'email' => $request->email,
+            ]);
+
+            return response()->json([
+                'message' => 'Votre compte a été suspendu. Veuillez contacter l\'administration.',
+            ], 403);
         }
 
         if ($user->two_factor_secret && $user->two_factor_confirmed_at) {
@@ -171,16 +174,11 @@ class AuthController extends Controller
         return response()->json($user);
     }
 
-    public function changePassword(Request $request): JsonResponse
+    public function changePassword(ChangePasswordRequest $request): JsonResponse
     {
-        $request->validate([
-            'current_password' => 'required|string',
-            'password' => 'required|string|min:8|confirmed',
-        ]);
-
         $user = $request->user();
 
-        if (!Hash::check($request->current_password, $user->password)) {
+        if (! Hash::check($request->current_password, $user->password)) {
             return response()->json(['message' => 'Le mot de passe actuel est incorrect.'], 422);
         }
 
@@ -195,13 +193,11 @@ class AuthController extends Controller
         return response()->json(['message' => 'Mot de passe mis à jour. Veuillez vous reconnecter.']);
     }
 
-    public function forgotPassword(Request $request): JsonResponse
+    public function forgotPassword(ForgotPasswordRequest $request): JsonResponse
     {
-        $request->validate(['email' => 'required|email|exists:users,email']);
-
         $token = Str::random(64);
 
-        DB::table('password_reset_tokens')->updateOrInsert(
+        PasswordResetToken::updateOrCreate(
             ['email' => $request->email],
             ['token' => Hash::make($token), 'created_at' => now()]
         );
@@ -230,22 +226,17 @@ class AuthController extends Controller
         ]);
     }
 
-    public function resetPassword(Request $request): JsonResponse
+    public function resetPassword(ResetPasswordRequest $request): JsonResponse
     {
-        $request->validate([
-            'email' => 'required|email',
-            'token' => 'required|string',
-            'password' => 'required|string|min:8|confirmed',
-        ]);
+        $record = PasswordResetToken::where('email', $request->email)->first();
 
-        $record = DB::table('password_reset_tokens')->where('email', $request->email)->first();
-
-        if (!$record || !Hash::check($request->token, $record->token)) {
+        if (! $record || ! Hash::check($request->token, $record->token)) {
             return response()->json(['message' => __('passwords.token')], 400);
         }
 
         if ($record->created_at && Carbon::parse($record->created_at)->addMinutes(60)->isPast()) {
-            DB::table('password_reset_tokens')->where('email', $request->email)->delete();
+            PasswordResetToken::where('email', $request->email)->delete();
+
             return response()->json(['message' => __('passwords.token')], 400);
         }
 
@@ -255,29 +246,25 @@ class AuthController extends Controller
 
         AuditService::log('password_reset', 'Mot de passe réinitialisé', $user);
 
-        DB::table('password_reset_tokens')->where('email', $request->email)->delete();
+        PasswordResetToken::where('email', $request->email)->delete();
 
         Log::info('Mot de passe réinitialisé', ['user_id' => $user->id, 'email' => $user->email]);
 
         return response()->json(['message' => __('passwords.reset')]);
     }
 
-    public function verifyTwoFactor(Request $request): JsonResponse
+    public function verifyTwoFactor(VerifyTwoFactorLoginRequest $request): JsonResponse
     {
-        $request->validate([
-            'code' => 'required|string|min:6|max:8',
-        ]);
-
         $user = $request->user();
 
-        if (!$user || !$user->two_factor_secret || !$request->user()->tokenCan('2fa-pending')) {
+        if (! $user || ! $user->two_factor_secret || ! $request->user()->tokenCan('2fa-pending')) {
             return response()->json(['message' => 'Session invalide.'], 401);
         }
 
         $google2fa = app(Google2FA::class);
         $secret = Crypt::decryptString($user->two_factor_secret);
 
-        if (!$google2fa->verifyKey($secret, $request->input('code'), 4)) {
+        if (! $google2fa->verifyKey($secret, $request->input('code'), 4)) {
             $recoveryCodes = $user->two_factor_recovery_codes
                 ? json_decode(Crypt::decryptString($user->two_factor_recovery_codes), true)
                 : [];
@@ -295,7 +282,7 @@ class AuthController extends Controller
                 }
             }
 
-            if (!$found) {
+            if (! $found) {
                 return response()->json(['message' => 'Code invalide.'], 422);
             }
         }
@@ -314,7 +301,7 @@ class AuthController extends Controller
                 'email' => $user->email,
                 'role' => $user->role,
                 'email_verified_at' => $user->email_verified_at?->toISOString(),
-                'photo' => $user->studentProfile?->photo ? url('storage/' . $user->studentProfile->photo) : null,
+                'photo' => $user->studentProfile?->photo ? Storage::disk('public')->url($user->studentProfile->photo) : null,
             ],
         ]);
     }

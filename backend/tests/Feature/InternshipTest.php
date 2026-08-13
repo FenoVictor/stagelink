@@ -2,7 +2,6 @@
 
 namespace Tests\Feature;
 
-use App\Models\Category;
 use App\Models\Company;
 use App\Models\Internship;
 use App\Models\User;
@@ -15,14 +14,16 @@ class InternshipTest extends TestCase
 
     private function createStudent()
     {
-        $user = User::create(['name' => 'Student', 'email' => 'student@test.com', 'password' => bcrypt('password'), 'role' => 'student']);
+        $user = User::factory()->create(['name' => 'Student', 'email' => 'student@test.com', 'role' => 'student']);
+
         return $user;
     }
 
     private function createCompany()
     {
-        $user = User::create(['name' => 'Company', 'email' => 'company@test.com', 'password' => bcrypt('password'), 'role' => 'company']);
+        $user = User::factory()->create(['name' => 'Company', 'email' => 'company@test.com', 'role' => 'company']);
         $company = Company::create(['user_id' => $user->id, 'name' => 'TestCorp']);
+
         return [$user, $company];
     }
 
@@ -69,7 +70,7 @@ class InternshipTest extends TestCase
         [$user, $company] = $this->createCompany();
         $token = $user->createToken('test')->plainTextToken;
 
-        $response = $this->withHeader('Authorization', 'Bearer ' . $token)
+        $response = $this->withHeader('Authorization', 'Bearer '.$token)
             ->postJson('/api/company/internships', [
                 'title' => 'Nouveau Stage',
                 'description' => 'Description du stage',
@@ -104,7 +105,7 @@ class InternshipTest extends TestCase
             'status' => 'published',
         ]);
 
-        $response = $this->withHeader('Authorization', 'Bearer ' . $token)
+        $response = $this->withHeader('Authorization', 'Bearer '.$token)
             ->putJson("/api/company/internships/{$internship->id}", [
                 'title' => 'Nouveau titre',
             ]);
@@ -127,7 +128,7 @@ class InternshipTest extends TestCase
             'status' => 'published',
         ]);
 
-        $response = $this->withHeader('Authorization', 'Bearer ' . $token)
+        $response = $this->withHeader('Authorization', 'Bearer '.$token)
             ->deleteJson("/api/company/internships/{$internship->id}");
 
         $response->assertOk();
@@ -150,7 +151,7 @@ class InternshipTest extends TestCase
             'status' => 'published',
         ]);
 
-        $response = $this->withHeader('Authorization', 'Bearer ' . $token)
+        $response = $this->withHeader('Authorization', 'Bearer '.$token)
             ->postJson("/api/internships/{$internship->id}/apply", [
                 'cover_letter' => 'Je suis très motivé pour ce stage.',
             ]);
@@ -178,10 +179,10 @@ class InternshipTest extends TestCase
             'status' => 'published',
         ]);
 
-        $this->withHeader('Authorization', 'Bearer ' . $token)
+        $this->withHeader('Authorization', 'Bearer '.$token)
             ->postJson("/api/internships/{$internship->id}/apply", ['cover_letter' => 'Première candidature']);
 
-        $response = $this->withHeader('Authorization', 'Bearer ' . $token)
+        $response = $this->withHeader('Authorization', 'Bearer '.$token)
             ->postJson("/api/internships/{$internship->id}/apply", ['cover_letter' => 'Deuxième candidature']);
 
         $response->assertStatus(409);

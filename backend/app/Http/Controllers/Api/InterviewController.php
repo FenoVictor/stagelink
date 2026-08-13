@@ -4,6 +4,8 @@ namespace App\Http\Controllers\Api;
 
 use App\Events\NewNotification;
 use App\Http\Controllers\Controller;
+use App\Http\Requests\StoreInterviewRequest;
+use App\Http\Requests\UpdateInterviewRequest;
 use App\Mail\InterviewScheduled;
 use App\Models\Application;
 use App\Models\Interview;
@@ -19,40 +21,36 @@ class InterviewController extends Controller
     {
         $user = $request->user();
 
+        $perPage = min((int) $request->input('per_page', 50), 100);
+
         if ($user->role === 'company') {
             $interviews = Interview::whereHas('application.internship.company', function ($q) use ($user) {
                 $q->where('user_id', $user->id);
             })
                 ->with(['application.internship:id,title', 'application.student:id,name'])
                 ->orderBy('date')
-                ->get();
+                ->paginate($perPage);
         } elseif ($user->role === 'student') {
             $interviews = Interview::whereHas('application', function ($q) use ($user) {
                 $q->where('student_id', $user->id);
             })
                 ->with(['application.internship:id,title', 'application.student:id,name'])
                 ->orderBy('date')
-                ->get();
+                ->paginate($perPage);
         } else {
             $interviews = Interview::with(['application.internship:id,title', 'application.student:id,name'])
                 ->orderBy('date')
-                ->get();
+                ->paginate($perPage);
         }
 
         return response()->json($interviews);
     }
 
-    public function store(Request $request): JsonResponse
+    public function store(StoreInterviewRequest $request): JsonResponse
     {
         $this->authorize('create', Interview::class);
 
-        $data = $request->validate([
-            'application_id' => 'required|exists:applications,id',
-            'date' => 'required|date|after:now',
-            'meeting_link' => 'nullable|url|max:255',
-            'notes' => 'nullable|string|max:2000',
-            'location' => 'nullable|string|max:255',
-        ]);
+        $data = $request->validated();
 
         $application = Application::findOrFail($data['application_id']);
 
@@ -81,7 +79,7 @@ class InterviewController extends Controller
                 'user_id' => $application->student_id,
                 'type' => 'interview',
                 'title' => 'Entretien programmé',
-                'message' => 'Un entretien a été programmé pour "' . $application->internship->title . '" le ' . $interview->date->format('d/m/Y à H:i') . '.',
+                'message' => 'Un entretien a été programmé pour "'.$application->internship->title.'" le '.$interview->date->format('d/m/Y à H:i').'.',
             ]);
             broadcast(new NewNotification($notification));
         } catch (\Throwable $e) {
@@ -98,17 +96,11 @@ class InterviewController extends Controller
         return response()->json($interview->load(['application.internship:id,title', 'application.student:id,name']), 201);
     }
 
-    public function update(Request $request, Interview $interview): JsonResponse
+    public function update(UpdateInterviewRequest $request, Interview $interview): JsonResponse
     {
         $this->authorize('update', $interview);
 
-        $data = $request->validate([
-            'date' => 'sometimes|date|after:now',
-            'meeting_link' => 'nullable|url|max:255',
-            'status' => 'sometimes|in:scheduled,completed,cancelled',
-            'notes' => 'nullable|string|max:2000',
-            'location' => 'nullable|string|max:255',
-        ]);
+        $data = $request->validated();
 
         $interview->update($data);
 

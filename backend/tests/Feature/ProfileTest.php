@@ -14,8 +14,9 @@ class ProfileTest extends TestCase
 
     private function createStudent()
     {
-        $user = User::create(['name' => 'Student', 'email' => 'profile@test.com', 'password' => bcrypt('password'), 'role' => 'student']);
+        $user = User::factory()->create(['name' => 'Student', 'email' => 'profile@test.com', 'role' => 'student', 'email_verified_at' => null]);
         $user->studentProfile()->create([]);
+
         return $user;
     }
 
@@ -24,7 +25,7 @@ class ProfileTest extends TestCase
         $user = $this->createStudent();
         $token = $user->createToken('test')->plainTextToken;
 
-        $response = $this->withHeader('Authorization', 'Bearer ' . $token)
+        $response = $this->withHeader('Authorization', 'Bearer '.$token)
             ->getJson('/api/profile');
 
         $response->assertOk()
@@ -36,7 +37,7 @@ class ProfileTest extends TestCase
         $user = $this->createStudent();
         $token = $user->createToken('test')->plainTextToken;
 
-        $response = $this->withHeader('Authorization', 'Bearer ' . $token)
+        $response = $this->withHeader('Authorization', 'Bearer '.$token)
             ->postJson('/api/profile', [
                 'firstname' => 'Jean',
                 'lastname' => 'Dupont',
@@ -62,7 +63,7 @@ class ProfileTest extends TestCase
         $skill1 = Skill::create(['name' => 'PHP']);
         $skill2 = Skill::create(['name' => 'Laravel']);
 
-        $response = $this->withHeader('Authorization', 'Bearer ' . $token)
+        $response = $this->withHeader('Authorization', 'Bearer '.$token)
             ->postJson('/api/profile', [
                 'skills' => [
                     ['id' => $skill1->id, 'level' => 'Avancé'],
@@ -82,7 +83,7 @@ class ProfileTest extends TestCase
 
         $cv = UploadedFile::fake()->create('cv.pdf', 100, 'application/pdf');
 
-        $response = $this->withHeader('Authorization', 'Bearer ' . $token)
+        $response = $this->withHeader('Authorization', 'Bearer '.$token)
             ->postJson('/api/profile', [
                 'cv' => $cv,
             ]);
@@ -100,10 +101,10 @@ class ProfileTest extends TestCase
 
     public function test_company_cannot_access_student_profile(): void
     {
-        $company = User::create(['name' => 'Company', 'email' => 'co@test.com', 'password' => bcrypt('password'), 'role' => 'company']);
+        $company = User::factory()->create(['name' => 'Company', 'email' => 'co@test.com', 'role' => 'company', 'email_verified_at' => null]);
         $token = $company->createToken('test')->plainTextToken;
 
-        $response = $this->withHeader('Authorization', 'Bearer ' . $token)
+        $response = $this->withHeader('Authorization', 'Bearer '.$token)
             ->getJson('/api/profile');
 
         $response->assertStatus(403);

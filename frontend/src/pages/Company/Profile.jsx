@@ -72,8 +72,8 @@ export default function CompanyProfile() {
             <div className="w-20 h-20 rounded-lg bg-gray-100 overflow-hidden flex-shrink-0">
               {logoPreview ? (
                 <img src={logoPreview} alt="Logo" className="w-full h-full object-cover" />
-              ) : profile.logo ? (
-                <img src={profile.logo} alt="Logo" className="w-full h-full object-cover" />
+              ) : (profile.logo_url || profile.logo) ? (
+                <img src={profile.logo_url || profile.logo} alt="Logo" className="w-full h-full object-cover" />
               ) : (
                 <div className="w-full h-full flex items-center justify-center text-text-muted text-sm">Logo</div>
               )}
