@@ -127,4 +127,19 @@ class AuthTest extends TestCase
 
         $response->assertStatus(401);
     }
+
+    public function test_unauthenticated_user_gets_401_without_json_accept_header(): void
+    {
+        $response = $this->get('/api/user', ['Accept' => '*/*']);
+
+        $response->assertStatus(401);
+    }
+
+    public function test_invalid_token_gets_401(): void
+    {
+        $response = $this->withHeader('Authorization', 'Bearer invalid.token.value')
+            ->get('/api/user', ['Accept' => '*/*']);
+
+        $response->assertStatus(401);
+    }
 }
