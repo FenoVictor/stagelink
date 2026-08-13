@@ -142,4 +142,14 @@ class AuthTest extends TestCase
 
         $response->assertStatus(401);
     }
+
+    public function test_error_responses_include_cors_headers(): void
+    {
+        $origin = config('cors.allowed_origins')[0];
+
+        $response = $this->getJson('/api/user', ['Origin' => $origin]);
+
+        $response->assertStatus(401)
+            ->assertHeader('Access-Control-Allow-Origin', $origin);
+    }
 }

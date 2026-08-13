@@ -52,6 +52,19 @@ return Application::configure(basePath: dirname(__DIR__))
             }
         });
 
+        $exceptions->respond(function ($response, $e, $request) {
+            if ($request->is('api/*')) {
+                $origin = $request->headers->get('Origin');
+
+                if ($origin && in_array($origin, config('cors.allowed_origins'), true)) {
+                    $response->headers->set('Access-Control-Allow-Origin', $origin);
+                    $response->headers->set('Vary', 'Origin');
+                }
+            }
+
+            return $response;
+        });
+
         $exceptions->reportable(function (\Throwable $e) {
             if (app()->bound('sentry')) {
                 app('sentry')->captureException($e);
