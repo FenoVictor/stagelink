@@ -9,8 +9,17 @@ jobs:
   ping-render:
     runs-on: ubuntu-latest
     steps:
-      - name: Ping Render health endpoint
+      - name: Ping Render health endpoint (with retry for cold start)
         run: |
-          code=$(curl -sS -o /dev/null -w "%{http_code}" --max-time 30 https://stagelink-api.onrender.com/api/health)
-          echo "Render health returned HTTP $code"
-          if [ "$code" != "200" ]; then exit 1; fi
+          url="https://stagelink-api.onrender.com/api/health"
+          for i in $(seq 1 20); do
+            code=$(curl -sS -o /dev/null -w "%{http_code}" --max-time 100 "$url")
+            echo "Attempt $i: Render health returned HTTP $code"
+            if [ "$code" = "200" ]; then
+              echo "Render is warm."
+              exit 0
+            fi
+            sleep 10
+          done
+          echo "Render did not respond after 20 attempts." >&2
+          exit 1

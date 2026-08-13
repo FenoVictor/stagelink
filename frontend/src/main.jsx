@@ -8,6 +8,7 @@ import { ThemeProvider } from "./context/ThemeContext";
 import App from "./App";
 import "./index.css";
 import "./i18n";
+import { startApiWarmup } from "./services/warmup";
 
 if (import.meta.env.VITE_SENTRY_DSN) {
   import("@sentry/react").then((Sentry) => {
@@ -23,6 +24,10 @@ if (import.meta.env.VITE_SENTRY_DSN) {
 const queryClient = new QueryClient({
   defaultOptions: { queries: { retry: 1, refetchOnWindowFocus: false, staleTime: 5 * 60 * 1000 } },
 });
+
+if (import.meta.env.PROD) {
+  startApiWarmup();
+}
 
 ReactDOM.createRoot(document.getElementById("root")).render(
   <React.StrictMode>
